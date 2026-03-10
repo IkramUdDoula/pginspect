@@ -58,10 +58,10 @@
 
 ### ☁️ Cloud Ready
 - 🚀 **Railway** - One-click deployment
-- 🟢 **Supabase** - Direct integration
-- 🔵 **Neon** - Serverless PostgreSQL
-- 🟣 **Render** - Easy hosting
-- 🟠 **AWS RDS** - Enterprise ready
+- 🟢 **Supabase** - Direct integration (Upcoming)
+- 🔵 **Neon** - Serverless PostgreSQL (Upcoming)
+- 🟣 **Render** - Easy hosting (Upcoming)
+- 🟠 **AWS RDS** - Enterprise ready (Upcoming)
 
 </td>
 </tr>
