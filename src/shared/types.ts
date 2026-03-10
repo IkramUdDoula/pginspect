@@ -1,0 +1,105 @@
+// Shared types between client and server
+
+export interface ColumnInfo {
+  name: string;
+  type: string;
+  nullable: boolean;
+  defaultValue: string | null;
+  isPrimaryKey: boolean;
+  isUnique: boolean;
+  comment: string | null;
+  enumValues?: string[];
+}
+
+export interface IndexInfo {
+  name: string;
+  columns: string[];
+  isUnique: boolean;
+  isPrimary: boolean;
+}
+
+export interface ForeignKeyInfo {
+  name: string;
+  column: string;
+  referencedTable: string;
+  referencedColumn: string;
+}
+
+export interface TableInfo {
+  name: string;
+  schema: string;
+  rowCount: number;
+  sizeBytes: number;
+  columns: ColumnInfo[];
+  indexes: IndexInfo[];
+  foreignKeys: ForeignKeyInfo[];
+}
+
+export interface ConnectionInfo {
+  id?: string;
+  name: string;
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+  sslMode: string;
+  status?: 'connected' | 'disconnected' | 'error';
+  connectedAt?: Date;
+  lastUsed?: Date;
+  serverVersion?: string;
+  dbSize?: string;
+}
+
+export interface QueryResult {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  executionTime: number;
+  isSimulated: boolean;
+}
+
+export interface SchemaState {
+  schemas: string[];
+  tables: Record<string, TableInfo[]>;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface QueryExecutionRequest {
+  connectionId: string;
+  sql: string;
+  limit?: number;
+}
+
+export interface QueryExplainRequest {
+  connectionId: string;
+  sql: string;
+}
+
+export interface DataInsertRequest {
+  connectionId: string;
+  schema: string;
+  table: string;
+  data: Record<string, unknown>;
+}
+
+export interface DataUpdateRequest {
+  connectionId: string;
+  schema: string;
+  table: string;
+  where: Record<string, unknown>;
+  data: Record<string, unknown>;
+}
+
+export interface DataDeleteRequest {
+  connectionId: string;
+  schema: string;
+  table: string;
+  where: Record<string, unknown>;
+}
