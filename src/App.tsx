@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ClerkProvider } from "@clerk/react";
 import { ConnectionProvider } from "@/contexts/ConnectionContext";
+import { ViewProvider } from "@/contexts/ViewContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { setAuthTokenProvider } from "@/lib/apiClient";
 import { SignIn } from "@/components/auth/SignIn";
@@ -25,10 +26,10 @@ if (!CLERK_PUBLISHABLE_KEY) {
 }
 
 function AuthTokenProvider({ children }: { children: React.ReactNode }) {
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && isSignedIn) {
       setAuthTokenProvider(async () => {
         try {
           return await getToken();
@@ -38,7 +39,7 @@ function AuthTokenProvider({ children }: { children: React.ReactNode }) {
         }
       });
     }
-  }, [getToken, isLoaded]);
+  }, [getToken, isLoaded, isSignedIn]);
 
   return <>{children}</>;
 }
@@ -167,7 +168,9 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <ConnectionProvider>
-                        <Index />
+                        <ViewProvider>
+                          <Index />
+                        </ViewProvider>
                       </ConnectionProvider>
                     </ProtectedRoute>
                   }

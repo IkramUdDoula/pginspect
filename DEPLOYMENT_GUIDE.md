@@ -5,21 +5,24 @@ Complete guide for deploying pgInspect from scratch.
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Fresh Installation](#fresh-installation)
+- [Development Setup (Native)](#development-setup-native)
+- [Docker Deployment](#docker-deployment)
 - [Database Schema](#database-schema)
 - [Connecting to Databases](#connecting-to-databases)
-- [Docker Commands](#docker-commands)
 - [Production Deployment](#production-deployment)
 - [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- Node.js 18+ or [Bun](https://bun.sh) (recommended)
+- Docker and Docker Compose
 - Git
 - Clerk account ([sign up free](https://clerk.com))
 - Text editor
 
-## Fresh Installation
+## Development Setup (Native)
+
+**Recommended for development** - runs frontend and backend natively with hot reload.
 
 ### Step 1: Clone Repository
 
@@ -28,9 +31,17 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 ```
 
-### Step 2: Configure Environment
+### Step 2: Install Dependencies
 
-Create `.env` file:
+```bash
+npm install
+# or
+bun install
+```
+
+### Step 3: Configure Environment
+
+Create `.env` file for native development:
 
 ```bash
 cp .env.example .env
@@ -47,7 +58,7 @@ DB_POOL_MAX=10
 # Server Configuration
 PORT=3000
 NODE_ENV=development
-LOG_LEVEL=info
+LOG_LEVEL=debug
 
 # Security
 CORS_ORIGIN=http://localhost:8080,http://localhost:3000
@@ -86,10 +97,169 @@ openssl rand -base64 32
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
+### Step 4: Start PostgreSQL Database
+
+```bash
+# Start PostgreSQL in Docker
+docker run --name pginspect-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=pgadmin \
+  -p 5432:5432 \
+  -d postgres:15
+```
+
+### Step 5: Initialize Database
+
+Run the database schema:
+
+**Windows (PowerShell):**
+```powershell
+Get-Content db/schema.sql | docker exec -i pginspect-db psql -U postgres -d pgadmin
+```
+
+**Mac/Linux:**
+```bash
+docker exec -i pginspect-db psql -U postgres -d pgadmin < db/schema.sql
+```
+
+### Step 6: Start Development Servers
+
+```bash
+# Start both frontend and backend with hot reload
+npm run dev
+
+# This starts:
+# - Frontend (Vite): http://localhost:8080
+# - Backend (Node.js/Bun): http://localhost:3000
+```
+
+**Note:** The `npm run dev` command automatically loads environment variables from `.env` file, ensuring the correct PORT is used even if you have system environment variables set.
+
+### Step 7: Verify Installation
+
+```bash
+# Check database tables
+docker exec pginspect-db psql -U postgres -d pgadmin -c "\dt"
+```
+
+Expected output:
+```
+ Schema |       Name       | Type  |  Owner
+--------+------------------+-------+----------
+ public | saved_views      | table | postgres
+ public | user_connections | table | postgres
+ public | users            | table | postgres
+```
+
+```bash
+# Check API health
+curl http://localhost:3000/api/health
+```
+
+Expected response:
+```json
+{"success":true,"data":{"status":"ok","uptime":123,...}}
+```
+
+### Step 8: Access Application
+
+Open http://localhost:8080 in your browser
+
+### Step 9: Sign In & Connect
+
+1. Click "Get Started" or "Sign In"
+2. Authenticate with Google or Microsoft
+3. Create your first database connection using:
+   ```
+   Host: localhost
+   Port: 5432
+   Database: pgadmin
+   Username: postgres
+   Password: postgres
+   SSL Mode: disable
+   ```
+4. Start querying and saving views
+
+## Docker Deployment
+
+**Recommended for production** - runs everything in containers.
+
+### Step 1: Clone Repository
+
+```bash
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+```
+
+### Step 2: Configure Docker Environment
+
+Create Docker-specific environment file:
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+Edit `.env.docker` with your values:
+
+```env
+# Docker-specific environment configuration
+# Database Configuration (Docker internal network)
+DATABASE_URL=postgresql://postgres:postgres@database:5432/pgladmin
+DB_POOL_MIN=2
+DB_POOL_MAX=5
+
+# Server Configuration
+PORT=9000
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# Security
+CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+QUERY_TIMEOUT=30000
+MAX_RESULT_ROWS=1000
+
+# Features
+ENABLE_QUERY_LOGGING=true
+ENABLE_EXPLAIN=true
+
+# Frontend (Vite)
+VITE_API_URL=http://localhost:9000
+VITE_API_TIMEOUT=30000
+
+# Clerk Authentication (get from https://dashboard.clerk.com)
+CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+CLERK_SECRET_KEY=sk_test_your_key_here
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# Encryption Key (generate with: openssl rand -base64 32)
+ENCRYPTION_KEY=your-32-character-encryption-key-here
+```
+
+**Key differences from native development:**
+- Uses `database:5432` instead of `localhost:5432` for DATABASE_URL
+- Backend runs on port 9000 (Docker internal)
+- Frontend runs on port 5000 (Docker internal)
+- Frontend API URL points to `http://localhost:9000`
+
+**Get Clerk Keys:**
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Create new application
+3. Enable Google and Microsoft OAuth
+4. Copy keys from "API Keys" section
+
+**Generate Encryption Key:**
+```bash
+# Mac/Linux
+openssl rand -base64 32
+
+# Windows (PowerShell)
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+```
+
 ### Step 3: Start Docker Services
 
 ```bash
-# Start database and app
+# Start database and app with Docker-specific environment
 docker-compose up -d
 
 # Verify containers are running
@@ -99,9 +269,11 @@ docker ps
 Expected output:
 ```
 NAMES                  STATUS                 PORTS
-pginspect-app-1        Up X minutes (healthy) 0.0.0.0:3000->3000/tcp
+pginspect-app-1        Up X minutes (healthy) 0.0.0.0:5000->5000/tcp, 0.0.0.0:9000->9000/tcp
 pginspect-database-1   Up X minutes (healthy) 0.0.0.0:5432->5432/tcp
 ```
+
+**Note:** The docker-compose.yml automatically uses `.env.docker` for Docker-specific configuration, while native development uses `.env`.
 
 ### Step 4: Initialize Database
 
@@ -127,44 +299,50 @@ Get-Content db/schema.sql | docker exec -i pginspect-database-1 psql -U postgres
 docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 ```
 
-### Step 5: Verify Installation
+### Step 5: Access Application
 
-```bash
-# Check database tables
-docker exec pginspect-database-1 psql -U postgres -d pgadmin -c "\dt"
-```
+Open http://localhost:5000 in your browser
 
-Expected output:
-```
- Schema |       Name       | Type  |  Owner
---------+------------------+-------+----------
- public | user_connections | table | postgres
- public | users            | table | postgres
-```
-
-```bash
-# Check API health
-curl http://localhost:3000/api/health
-```
-
-Expected response:
-```json
-{"success":true,"data":{"status":"ok","uptime":123,...}}
-```
-
-### Step 6: Access Application
-
-Open http://localhost:3000 in your browser
-
-### Step 7: Sign In & Connect
+### Step 6: Sign In & Connect
 
 1. Click "Get Started" or "Sign In"
 2. Authenticate with Google or Microsoft
-3. Create your first database connection
+3. Create your first database connection using:
+   ```
+   Host: database          ← IMPORTANT: Use "database" not "localhost"
+   Port: 5432
+   Database: pgadmin
+   Username: postgres
+   Password: postgres
+   SSL Mode: disable
+   ```
+4. Start querying and saving views
+
+## Port Configuration
+
+### Native Development
+
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Frontend** | `8080` | `http://localhost:8080` | React app (Vite dev server) |
+| **Backend** | `3000` | `http://localhost:3000` | API server (Node.js/Bun with hot reload) |
+| **Database** | `5432` | `localhost:5432` | PostgreSQL (Docker container) |
+
+### Docker Deployment
+
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Frontend** | `5000` | `http://localhost:5000` | React app (Vite in container) |
+| **Backend** | `9000` | `http://localhost:9000` | API server (Bun in container) |
+| **Database** | `5432` | `localhost:5432` | PostgreSQL container |
+
+**Environment Files:**
+- **Native**: Uses `.env` (backend on port 3000, frontend on port 8080)
+- **Docker**: Uses `.env.docker` (backend on port 9000, frontend on port 5000)
 
 ## Database Schema
 
-The application uses two tables:
+The application uses three main tables:
 
 ### `users` Table
 
@@ -212,20 +390,49 @@ CREATE TABLE user_connections (
 - Passwords encrypted before storage
 - One connection name per user (unique constraint)
 
+### `saved_views` Table
+
+Stores user-created saved views with query metadata.
+
+```sql
+CREATE TABLE saved_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL,  -- References users(id)
+  connection_id INTEGER NOT NULL,  -- References user_connections(id)
+  schema_name VARCHAR(255) NOT NULL,
+  view_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  query_text TEXT NOT NULL,
+  query_type VARCHAR(20) NOT NULL CHECK (query_type IN ('sql', 'visual')),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (connection_id) REFERENCES user_connections(id) ON DELETE CASCADE,
+  UNIQUE(user_id, connection_id, view_name)
+);
+```
+
+**How it works:**
+- Created when users save queries as views
+- Stores complete query text and metadata
+- Unique view names per user per connection
+- Supports both SQL and Visual query types
+- Automatic cleanup when users or connections are deleted
+
 ## Connecting to Databases
 
-### Local Docker Database
+### Native Development Setup
 
-When backend runs in Docker, use `host.docker.internal`:
+When running the backend natively (recommended for development), use `localhost`:
 
 **Connection String:**
 ```
-postgresql://postgres:postgres@host.docker.internal:5432/pgadmin
+postgresql://postgres:postgres@localhost:5432/pgadmin
 ```
 
 **Direct Connection:**
 ```
-Host: host.docker.internal
+Host: localhost
 Port: 5432
 Database: pgadmin
 Username: postgres
@@ -233,11 +440,38 @@ Password: postgres
 SSL Mode: disable
 ```
 
-**Why `host.docker.internal`?**
-- Backend runs inside Docker container
-- `localhost` refers to container itself
-- `host.docker.internal` reaches host machine
-- `database` connects to Docker PostgreSQL service
+### Docker Deployment
+
+When backend runs in Docker, use the Docker service name:
+
+**Connection String:**
+```
+postgresql://postgres:postgres@database:5432/pgadmin
+```
+
+**Direct Connection:**
+```
+Host: database
+Port: 5432
+Database: pgadmin
+Username: postgres
+Password: postgres
+SSL Mode: disable
+```
+
+**Why the difference?**
+- **Native backend**: Connects directly to Docker container via `localhost:5432`
+- **Docker backend**: Uses Docker internal network, service name is `database`
+- **Host machine database**: Use `host.docker.internal` from Docker containers
+
+### Connection Context Summary
+
+| Backend Location | Database Location | Hostname to Use |
+|------------------|-------------------|-----------------|
+| Native (npm run dev) | Docker container | `localhost` |
+| Docker container | Docker container | `database` |
+| Docker container | Host machine | `host.docker.internal` |
+| Native | Host machine | `localhost` |
 
 ### Cloud Databases
 
@@ -327,7 +561,7 @@ Create `.env.production`:
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://user:pass@your-db-host:5432/dbname
-PORT=3000
+PORT=9000
 LOG_LEVEL=info
 
 # Use production Clerk keys
@@ -358,6 +592,8 @@ docker-compose -f docker-compose.yml up -d
 
 ### Step 3: Initialize Production Database
 
+**Important**: The database schema has been updated to include the new Saved Views feature. Make sure to run the latest schema:
+
 ```bash
 # Connect to your production database
 psql $DATABASE_URL < db/schema.sql
@@ -365,6 +601,8 @@ psql $DATABASE_URL < db/schema.sql
 # Or if using Docker
 docker exec -i your-db-container psql -U user -d dbname < db/schema.sql
 ```
+
+**For existing deployments**: The schema includes proper migration handling with `CREATE TABLE IF NOT EXISTS`, so running the updated schema on existing databases is safe.
 
 ### Step 4: Verify Deployment
 
@@ -423,11 +661,13 @@ docker-compose restart app
 # Check if schema file exists
 ls -la db/schema.sql
 
-# Manually run schema
+# Manually run schema (includes new saved_views table)
 docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 
-# Verify tables created
+# Verify tables created (should include saved_views)
 docker exec pginspect-database-1 psql -U postgres -d pgadmin -c "\dt"
+
+# Expected tables: users, user_connections, saved_views
 ```
 
 ### Users Not Syncing from Clerk
