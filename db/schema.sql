@@ -46,6 +46,33 @@ CREATE INDEX IF NOT EXISTS idx_user_connections_user_id ON user_connections(user
 CREATE INDEX IF NOT EXISTS idx_user_connections_created_at ON user_connections(created_at);
 
 -- ============================================================================
+-- SAVED VIEWS TABLE
+-- ============================================================================
+-- Stores user-created saved views with query metadata
+
+CREATE TABLE IF NOT EXISTS saved_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL,  -- References users(id) from Clerk
+  connection_id INTEGER NOT NULL,  -- References user_connections(id)
+  schema_name VARCHAR(255) NOT NULL,
+  view_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  query_text TEXT NOT NULL,
+  query_type VARCHAR(20) NOT NULL CHECK (query_type IN ('sql', 'visual')),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (connection_id) REFERENCES user_connections(id) ON DELETE CASCADE,
+  UNIQUE(user_id, connection_id, view_name)  -- Unique view names per user per connection
+);
+
+-- Indexes for saved_views table
+CREATE INDEX IF NOT EXISTS idx_saved_views_user_id ON saved_views(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_views_connection_id ON saved_views(connection_id);
+CREATE INDEX IF NOT EXISTS idx_saved_views_updated_at ON saved_views(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_saved_views_user_connection ON saved_views(user_id, connection_id);
+
+-- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
 -- Function to automatically update updated_at timestamp
@@ -70,6 +97,11 @@ CREATE TRIGGER update_users_updated_at
 
 CREATE TRIGGER update_user_connections_updated_at 
   BEFORE UPDATE ON user_connections 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_saved_views_updated_at 
+  BEFORE UPDATE ON saved_views 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();
 

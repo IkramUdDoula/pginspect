@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/react";
 import type { ConnectionInfo, SchemaState, TableInfo } from "@/shared/types";
 import type { QueryBlock } from "@/lib/queryBuilder";
 import { createBlock } from "@/lib/queryBuilder";
@@ -64,6 +65,7 @@ export function useConnection() {
 
 export function ConnectionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const { isSignedIn, isLoaded } = useAuth();
   const [connections, setConnections] = useState<ConnectionInfo[]>([]);
   const [activeConnection, setActiveConn] = useState<ConnectionInfo | null>(null);
   const [schemaState, setSchemaState] = useState<SchemaState | null>(null);
@@ -184,7 +186,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const { connectionId, schemas } = response.data;
+      const { connectionId, savedConnectionId, schemas } = response.data;
 
       // Fetch tables for the first schema (usually 'public')
       const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
@@ -199,6 +201,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       const updated: ConnectionInfo = {
         ...conn,
         id: connectionId,
+        savedConnectionId: savedConnectionId,
         status: "connected",
         connectedAt: new Date(),
         lastUsed: new Date(),
@@ -243,6 +246,19 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
 
   const setActiveConnection = useCallback(async (name: string) => {
     console.log('[ConnectionContext] setActiveConnection called with name:', name);
+    
+    // Check if user is authenticated
+    if (!isLoaded) {
+      console.log('[ConnectionContext] Auth not loaded yet, waiting...');
+      return;
+    }
+    
+    if (!isSignedIn) {
+      console.log('[ConnectionContext] User not signed in');
+      toast.error('Please sign in to connect to databases');
+      return;
+    }
+    
     const conn = connections.find((c) => c.name === name);
     console.log('[ConnectionContext] Found connection:', conn);
     
@@ -288,7 +304,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
           return;
         }
 
-        const { connectionId, schemas } = response.data;
+        const { connectionId, savedConnectionId, schemas } = response.data;
         console.log('[ConnectionContext] Connection created:', connectionId, 'Schemas:', schemas);
         
         const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
@@ -298,6 +314,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         const updated: ConnectionInfo = {
           ...conn,
           id: connectionId,
+          savedConnectionId: savedConnectionId,
           status: "connected",
           lastUsed: new Date(),
         };
@@ -355,7 +372,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
             return;
           }
 
-          const { connectionId, schemas } = reconnectResponse.data;
+          const { connectionId, savedConnectionId, schemas } = reconnectResponse.data;
           console.log('[ConnectionContext] Reconnected with new ID:', connectionId, 'Schemas:', schemas);
           
           const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
@@ -365,6 +382,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
           const updated: ConnectionInfo = {
             ...conn,
             id: connectionId,
+            savedConnectionId: savedConnectionId,
             status: "connected",
             lastUsed: new Date(),
           };
@@ -420,7 +438,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       setIsLoading(false);
       console.log('[ConnectionContext] setActiveConnection completed');
     }
-  }, [connections, queryClient]);
+  }, [connections, queryClient, isLoaded, isSignedIn]);
 
   const removeConnection = useCallback(async (name: string) => {
     const conn = connections.find((c) => c.name === name);

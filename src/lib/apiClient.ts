@@ -8,6 +8,10 @@ import type {
   TableInfo,
   QueryExecutionRequest,
   QueryExplainRequest,
+  SavedView,
+  CreateViewRequest,
+  UpdateViewRequest,
+  ViewListResponse,
 } from '@/shared/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -33,12 +37,22 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    console.log('=== ApiClient: request called ===');
+    console.log('ApiClient: endpoint =', endpoint);
+    console.log('ApiClient: options =', options);
+    console.log('ApiClient: baseUrl =', this.baseUrl);
+    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
       // Get auth token if available
       const token = getAuthToken ? await getAuthToken() : null;
+      console.log('ApiClient: Auth token available =', !!token);
+      if (token) {
+        console.log('ApiClient: Token preview =', token.substring(0, 50) + '...');
+        console.log('ApiClient: Token length =', token.length);
+      }
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -49,6 +63,9 @@ class ApiClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      console.log('ApiClient: Final headers =', headers);
+      console.log('ApiClient: Request body =', options.body);
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers,
@@ -57,11 +74,17 @@ class ApiClient {
 
       clearTimeout(timeoutId);
 
+      console.log('ApiClient: HTTP response status =', response.status);
+      console.log('ApiClient: HTTP response ok =', response.ok);
+
       const data = await response.json();
+      console.log('ApiClient: Response data =', data);
 
       if (!response.ok) {
+        console.log('ApiClient: HTTP error response');
         // Handle unauthorized
         if (response.status === 401) {
+          console.log('ApiClient: 401 Unauthorized - Session may have expired');
           return {
             success: false,
             error: 'Unauthorized - please sign in again',
@@ -74,9 +97,12 @@ class ApiClient {
         };
       }
 
+      console.log('ApiClient: Successful response');
       return data;
     } catch (error) {
       clearTimeout(timeoutId);
+      console.log('ApiClient: Exception in request');
+      console.error('ApiClient: Exception details =', error);
 
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -116,7 +142,7 @@ class ApiClient {
   async createConnection(
     name: string,
     connectionString: string
-  ): Promise<ApiResponse<{ connectionId: string; schemas: string[] }>> {
+  ): Promise<ApiResponse<{ connectionId: string; savedConnectionId: number; schemas: string[] }>> {
     return this.request('/api/connections/connect', {
       method: 'POST',
       body: JSON.stringify({ name, connectionString }),
@@ -181,6 +207,48 @@ class ApiClient {
     return this.request('/api/query/explain', {
       method: 'POST',
       body: JSON.stringify(request),
+    });
+  }
+
+  // Views management
+  async getViews(connectionId: number): Promise<ApiResponse<ViewListResponse>> {
+    return this.request(`/api/views?connectionId=${connectionId}`);
+  }
+
+  async getView(viewId: string): Promise<ApiResponse<{ view: SavedView }>> {
+    return this.request(`/api/views/${viewId}`);
+  }
+
+  async createView(viewData: CreateViewRequest): Promise<ApiResponse<{ view: SavedView }>> {
+    console.log('=== ApiClient: createView called ===');
+    console.log('ApiClient: viewData =', viewData);
+    console.log('ApiClient: Making POST request to /api/views');
+    
+    const response = await this.request('/api/views', {
+      method: 'POST',
+      body: JSON.stringify(viewData),
+    });
+    
+    console.log('ApiClient: Response received =', response);
+    return response;
+  }
+
+  async updateView(viewId: string, updates: UpdateViewRequest): Promise<ApiResponse<{ view: SavedView }>> {
+    return this.request(`/api/views/${viewId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteView(viewId: string): Promise<ApiResponse<void>> {
+    return this.request(`/api/views/${viewId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async executeView(viewId: string): Promise<ApiResponse<QueryResult & { view: { id: string; name: string; description?: string; connectionId: number; schemaName: string } }>> {
+    return this.request(`/api/views/${viewId}/execute`, {
+      method: 'POST',
     });
   }
 }

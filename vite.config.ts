@@ -5,10 +5,14 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
     hmr: {
-      overlay: false,
+      port: 8080,
+      host: "0.0.0.0",
+    },
+    watch: {
+      usePolling: true,
     },
     proxy: {
       '/api': {

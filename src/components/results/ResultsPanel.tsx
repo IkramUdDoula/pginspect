@@ -1,33 +1,38 @@
 import { useState } from "react";
 import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { useConnection } from "@/contexts/ConnectionContext";
+import { useViews } from "@/contexts/ViewContext";
 import { Button } from "@/components/ui/button";
 
 export function ResultsPanel() {
   const { queryResult, setEditingRecord, setIsInspectorOpen } = useConnection();
+  const { viewResults, isViewMode } = useViews();
   const [page, setPage] = useState(0);
 
-  if (!queryResult) {
+  // Use view results if in view mode, otherwise use regular query results
+  const currentResult = isViewMode ? viewResults : queryResult;
+
+  if (!currentResult) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Run a query to see results
+        {isViewMode ? 'Select a view to see results' : 'Run a query to see results'}
       </div>
     );
   }
 
   const pageSize = 50;
-  const totalPages = Math.ceil(queryResult.rows.length / pageSize);
-  const pageRows = queryResult.rows.slice(page * pageSize, (page + 1) * pageSize);
+  const totalPages = Math.ceil(currentResult.rows.length / pageSize);
+  const pageRows = currentResult.rows.slice(page * pageSize, (page + 1) * pageSize);
 
   const exportCSV = () => {
-    const header = queryResult.columns.join(",");
-    const rows = queryResult.rows.map((r) => queryResult.columns.map((c) => JSON.stringify(r[c] ?? "")).join(","));
+    const header = currentResult.columns.join(",");
+    const rows = currentResult.rows.map((r) => currentResult.columns.map((c) => JSON.stringify(r[c] ?? "")).join(","));
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "query_results.csv";
+    a.download = isViewMode ? `${viewResults?.view.name || 'view'}_results.csv` : "query_results.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -44,7 +49,10 @@ export function ResultsPanel() {
       {/* Status bar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border text-xs text-muted-foreground">
         <span>
-          {queryResult.rowCount} rows{queryResult.isSimulated ? " · simulated" : ""} · {queryResult.executionTime}ms
+          {currentResult.rowCount} rows{currentResult.isSimulated ? " · simulated" : ""} · {currentResult.executionTime}ms
+          {isViewMode && viewResults?.view && (
+            <span className="ml-2 text-primary">· {viewResults.view.name}</span>
+          )}
         </span>
         <Button variant="ghost" size="sm" onClick={exportCSV} className="h-6 px-2 text-[10px] text-muted-foreground">
           <Download className="h-3 w-3 mr-1" /> CSV
@@ -57,7 +65,7 @@ export function ResultsPanel() {
           <thead className="sticky top-0 bg-card z-10">
             <tr>
               <th className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border w-10">#</th>
-              {queryResult.columns.map((col) => (
+              {currentResult.columns.map((col) => (
                 <th key={col} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border whitespace-nowrap">
                   <span className="font-mono">{col}</span>
                 </th>
@@ -73,7 +81,7 @@ export function ResultsPanel() {
                 >
                   {page * pageSize + i + 1}
                 </td>
-                {queryResult.columns.map((col) => {
+                {currentResult.columns.map((col) => {
                   const val = row[col];
                   const isNull = val === null || val === undefined;
                   return (

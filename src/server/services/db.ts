@@ -30,19 +30,59 @@ export async function createConnection(info: ConnectionInfo): Promise<{ id: stri
     const { id, pool } = await createSupabaseConnection(info);
     
     // Create a postgres.js-like interface for compatibility
-    const sql = {
-      // Add basic query method that uses the pg pool
-      query: async (text: string, params?: any[]) => {
-        const client = await pool.connect();
-        try {
-          const result = await client.query(text, params);
-          return result.rows;
-        } finally {
-          client.release();
+    const sql = Object.assign(
+      // Template literal function
+      (strings: TemplateStringsArray, ...values: any[]) => {
+        // Convert template literal to parameterized query
+        let query = strings[0];
+        const params: any[] = [];
+        
+        for (let i = 0; i < values.length; i++) {
+          query += `$${i + 1}` + strings[i + 1];
+          params.push(values[i]);
         }
+        
+        return (async () => {
+          const client = await pool.connect();
+          try {
+            const result = await client.query(query, params);
+            return result.rows;
+          } finally {
+            client.release();
+          }
+        })();
       },
-      end: () => pool.end(),
-    } as any;
+      {
+        // Add basic query method that uses the pg pool
+        query: async (text: string, params?: any[]) => {
+          const client = await pool.connect();
+          try {
+            const result = await client.query(text, params);
+            return result.rows;
+          } finally {
+            client.release();
+          }
+        },
+        end: () => pool.end(),
+        unsafe: async (query: string) => {
+          const client = await pool.connect();
+          try {
+            const result = await client.query(query);
+            return result.rows;
+          } finally {
+            client.release();
+          }
+        },
+      }
+    ) as any;
+    
+    // Store in main connections map for getConnection() to find
+    connections.set(id, {
+      sql,
+      info: { ...info, id },
+      createdAt: new Date(),
+      lastUsed: new Date(),
+    });
     
     return { id, sql };
   }

@@ -23,6 +23,7 @@ docs
 *.njsproj
 *.sln
 *.sw?
+.kiro
 
 # Environment variables
 .env

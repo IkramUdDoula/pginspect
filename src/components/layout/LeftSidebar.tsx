@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Search, Table2, LayoutDashboard, PanelLeftClose, PanelLeft, RefreshCw, Plus, Trash2, X } from "lucide-react";
 import { useConnection } from "@/contexts/ConnectionContext";
+import { useViews } from "@/contexts/ViewContext";
 import { useTableCache } from "@/hooks/use-table-cache";
 import { createBlock } from "@/lib/queryBuilder";
 import { TableListSkeleton, CollapsedTableListSkeleton } from "./TableListSkeleton";
+import { SidebarTabs } from "./SidebarTabs";
+import { ViewsList } from "./ViewsList";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import {
@@ -50,8 +53,11 @@ export function LeftSidebar() {
     activeConnection
   } = useConnection();
   
+  const { exitViewMode } = useViews();
+  
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'tables' | 'views'>('tables');
   const [showDeleteTableDialog, setShowDeleteTableDialog] = useState(false);
   const [showAddTableDialog, setShowAddTableDialog] = useState(false);
   const [newTableName, setNewTableName] = useState("");
@@ -93,6 +99,8 @@ export function LeftSidebar() {
     // Close any create/edit modes
     setCreatingRecord(false);
     setEditingRecord(null);
+    // Exit view mode if active
+    exitViewMode();
   };
 
   const formatCount = (n: number) => {
@@ -222,7 +230,13 @@ export function LeftSidebar() {
             </button>
 
             <button
-              onClick={() => { setShowDashboard(true); setSelectedTable(null); setCreatingRecord(false); setEditingRecord(null); }}
+              onClick={() => { 
+                setShowDashboard(true); 
+                setSelectedTable(null); 
+                setCreatingRecord(false); 
+                setEditingRecord(null);
+                exitViewMode();
+              }}
               className={`p-2 rounded-md hover:bg-surface-hover transition-colors ${showDashboard ? "text-primary bg-primary/5" : "text-muted-foreground"}`}
               title="Dashboard"
             >
@@ -232,20 +246,31 @@ export function LeftSidebar() {
             <div className="w-6 border-t border-border my-1" />
           </div>
 
+          {/* Collapsed tabs */}
+          <SidebarTabs 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+            collapsed={true} 
+          />
+
           <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col items-center gap-0.5 w-full">
-            {showSkeleton ? (
-              <CollapsedTableListSkeleton />
+            {activeTab === 'tables' ? (
+              showSkeleton ? (
+                <CollapsedTableListSkeleton />
+              ) : (
+                filtered.map((table) => (
+                  <button
+                    key={table.name}
+                    onClick={() => handleTableClick(table)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-hover transition-colors ${selectedTable?.name === table.name && !showDashboard ? "bg-primary/5 text-primary" : "text-muted-foreground"}`}
+                    title={`${table.name} (${formatCount(table.rowCount)})`}
+                  >
+                    <Table2 className="h-3.5 w-3.5" />
+                  </button>
+                ))
+              )
             ) : (
-              filtered.map((table) => (
-                <button
-                  key={table.name}
-                  onClick={() => handleTableClick(table)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-hover transition-colors ${selectedTable?.name === table.name && !showDashboard ? "bg-primary/5 text-primary" : "text-muted-foreground"}`}
-                  title={`${table.name} (${formatCount(table.rowCount)})`}
-                >
-                  <Table2 className="h-3.5 w-3.5" />
-                </button>
-              ))
+              <ViewsList collapsed={true} />
             )}
           </div>
         </>
@@ -253,7 +278,16 @@ export function LeftSidebar() {
         <>
           {/* Dashboard + collapse */}
           <div className="flex items-center justify-between border-b border-border">
-            <button onClick={() => { setShowDashboard(true); setSelectedTable(null); setCreatingRecord(false); setEditingRecord(null); }} className={`flex items-center gap-2 px-3 py-2.5 text-sm transition-colors flex-1 whitespace-nowrap ${showDashboard ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <button 
+              onClick={() => { 
+                setShowDashboard(true); 
+                setSelectedTable(null); 
+                setCreatingRecord(false); 
+                setEditingRecord(null);
+                exitViewMode();
+              }} 
+              className={`flex items-center gap-2 px-3 py-2.5 text-sm transition-colors flex-1 whitespace-nowrap ${showDashboard ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
               <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
               <span>Go to Dashboard</span>
             </button>
@@ -266,78 +300,91 @@ export function LeftSidebar() {
             </button>
           </div>
 
-          {/* Search */}
-          <div className="p-2 border-b border-border">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Filter tables..."
-                className="w-full h-8 pl-8 pr-3 rounded-md bg-background border border-border text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-          </div>
+          {/* Tabs */}
+          <SidebarTabs 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+            collapsed={false} 
+          />
 
-          {/* Schema label */}
-          <div className="flex items-center justify-between px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium whitespace-nowrap border-b border-border">
-            <span>{activeSchema} · {showSkeleton ? '...' : `${filtered.length} tables`}</span>
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="p-1 rounded hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              title="Refresh tables"
-            >
-              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-
-          {/* Table actions */}
-          <div className="flex items-center gap-1 px-2 py-2 border-b border-border bg-card/50">
-            <button
-              onClick={() => setShowAddTableDialog(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors w-full justify-center"
-              title="Add new table"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Table</span>
-            </button>
-          </div>
-
-          {/* Table list */}
-          {showSkeleton ? (
-            <TableListSkeleton />
-          ) : (
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              {filtered.map((table) => (
-                <div
-                  key={table.name}
-                  className={`relative w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-hover transition-colors group whitespace-nowrap ${selectedTable?.name === table.name && !showDashboard ? "bg-primary/5 text-primary border-r-2 border-primary" : "text-foreground/80"}`}
-                >
-                  <button
-                    onClick={() => handleTableClick(table)}
-                    className="flex items-center gap-2 flex-1 min-w-0"
-                  >
-                    <Table2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    <span className="font-mono text-xs flex-1 text-left truncate">{table.name}</span>
-                    <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono group-hover:opacity-0 transition-opacity">
-                      {formatCount(table.rowCount)}
-                    </span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedTable(table);
-                      setShowDeleteTableDialog(true);
-                    }}
-                    className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                    title={`Delete ${table.name}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+          {activeTab === 'tables' ? (
+            <>
+              {/* Search */}
+              <div className="p-2 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Filter tables..."
+                    className="w-full h-8 pl-8 pr-3 rounded-md bg-background border border-border text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Schema label */}
+              <div className="flex items-center justify-between px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground font-medium whitespace-nowrap border-b border-border">
+                <span>{activeSchema} · {showSkeleton ? '...' : `${filtered.length} tables`}</span>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="p-1 rounded hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  title="Refresh tables"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {/* Table actions */}
+              <div className="flex items-center gap-1 px-2 py-2 border-b border-border bg-card/50">
+                <button
+                  onClick={() => setShowAddTableDialog(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors w-full justify-center"
+                  title="Add new table"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Table</span>
+                </button>
+              </div>
+
+              {/* Table list */}
+              {showSkeleton ? (
+                <TableListSkeleton />
+              ) : (
+                <div className="flex-1 overflow-y-auto scrollbar-thin">
+                  {filtered.map((table) => (
+                    <div
+                      key={table.name}
+                      className={`relative w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-hover transition-colors group whitespace-nowrap ${selectedTable?.name === table.name && !showDashboard ? "bg-primary/5 text-primary border-r-2 border-primary" : "text-foreground/80"}`}
+                    >
+                      <button
+                        onClick={() => handleTableClick(table)}
+                        className="flex items-center gap-2 flex-1 min-w-0"
+                      >
+                        <Table2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        <span className="font-mono text-xs flex-1 text-left truncate">{table.name}</span>
+                        <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono group-hover:opacity-0 transition-opacity">
+                          {formatCount(table.rowCount)}
+                        </span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTable(table);
+                          setShowDeleteTableDialog(true);
+                        }}
+                        className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        title={`Delete ${table.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <ViewsList collapsed={false} />
           )}
         </>
       )}

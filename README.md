@@ -39,6 +39,8 @@
 - 🎨 **Visual Query Builder** - No SQL required
 - 📝 **SQL Editor** - Monaco-powered with syntax highlighting
 - 📊 **Results Visualization** - Interactive data tables
+- 💾 **Saved Views** - Save & reuse frequent queries
+- 🔄 **Auto-Refresh Views** - Live data monitoring
 - 🌐 **Multi-Connection** - Manage multiple databases
 
 </td>
@@ -95,7 +97,9 @@
 
 ## 🚀 Quick Start
 
-Get up and running in 5 minutes with Docker:
+Get up and running in 5 minutes:
+
+### Option 1: Docker (Recommended for Production)
 
 ```bash
 # 1. Clone the repository
@@ -107,10 +111,34 @@ cp .env.example .env
 # Edit .env with your Clerk keys
 
 # 3. Start with Docker
-docker-compose up
+docker-compose up --build
 
 # 4. Open your browser
-# http://localhost:5173
+# http://localhost:3000
+```
+
+### Option 2: Native Development (Recommended for Development)
+
+```bash
+# 1. Clone the repository
+git clone <YOUR_GIT_URL>
+cd pginspect
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment variables
+cp .env.example .env
+# Edit .env with your Clerk keys
+
+# 4. Start PostgreSQL database (Docker)
+docker run --name pginspect-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pgadmin -p 5432:5432 -d postgres:15
+
+# 5. Start both frontend and backend
+npm run dev
+
+# 6. Open your browser
+# http://localhost:8080
 ```
 
 That's it! 🎉
@@ -119,10 +147,11 @@ That's it! 🎉
 
 | Document | Description |
 |----------|-------------|
-| [🚀 Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Complete deployment instructions |
+| [🚀 Deployment Guide](DEPLOYMENT_GUIDE.md) | Complete deployment instructions |
 | [🔐 Authentication Setup](docs/AUTH_SETUP_GUIDE.md) | Clerk configuration guide |
 | [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) | Database connection examples |
-| [💻 Development Guide](DEVELOPMENT.md) | Local development setup |
+| [💾 Views Implementation](docs/VIEWS_IMPLEMENTATION_SUMMARY.md) | Saved Views feature details |
+| [💻 Development Guide](docs/DEVELOPMENT.md) | Local development setup |
 | [🏗️ Architecture](docs/AUTH_IMPLEMENTATION.md) | Technical implementation details |
 
 ## 🎯 Key Features Explained
@@ -132,6 +161,15 @@ Build complex SQL queries without writing code. Drag and drop blocks for FROM, J
 
 ### 📝 SQL Editor
 Monaco-powered editor (same as VS Code) with PostgreSQL syntax highlighting, auto-complete, and multi-query support.
+
+### 💾 Saved Views
+Save frequently-used queries as reusable views. Features include:
+- **Tabbed Navigation** - Switch between Tables and Views in the sidebar
+- **One-Click Execution** - Run saved queries instantly
+- **Auto-Refresh** - Set views to refresh automatically (10s, 30s, 1m, 5m intervals)
+- **View Management** - Rename, delete, and edit saved views
+- **Query Type Preservation** - Maintains SQL vs Visual query builder context
+- **Connection-Specific** - Views are organized by database connection
 
 ### 🔍 Schema Inspector
 Explore your database structure: tables, columns, data types, indexes, foreign keys, and relationships. View row counts and storage size.
@@ -162,6 +200,61 @@ pgInspect uses [Clerk](https://clerk.com) for secure authentication with Google 
    ```
 
 📖 **Detailed Guide:** [docs/AUTH_SETUP_GUIDE.md](docs/AUTH_SETUP_GUIDE.md)
+
+## 💾 Saved Views Feature
+
+pgInspect now includes a powerful Saved Views feature that allows you to save, organize, and quickly access your frequently-used queries.
+
+### Key Features
+
+- **📁 Tabbed Sidebar**: Navigate between Tables and Views with a clean tabbed interface
+- **💾 Save Queries**: Convert any SQL or Visual query into a reusable view
+- **⚡ One-Click Execution**: Run saved views instantly with a single click
+- **🔄 Auto-Refresh**: Set views to refresh automatically at configurable intervals (10s, 30s, 1m, 5m)
+- **✏️ View Management**: Rename, delete, and edit your saved views
+- **🔗 Connection-Specific**: Views are organized by database connection
+- **🎯 Query Type Preservation**: Maintains whether the view was created from SQL Editor or Visual Builder
+
+### How to Use
+
+1. **Create a View**:
+   - Write your query in SQL Editor or Visual Query Builder
+   - Click "Save as View" button in the toolbar
+   - Enter a name and optional description
+   - Click "Save View"
+
+2. **Access Views**:
+   - Click the "Views" tab in the left sidebar
+   - See all your saved views for the current connection
+   - Click any view to execute it instantly
+
+3. **Manage Views**:
+   - Right-click on any view for options
+   - **Rename**: Update the view name and description
+   - **Delete**: Remove the view permanently
+   - **Edit**: Load the view back into the query editor
+
+4. **Auto-Refresh**:
+   - When viewing results from a saved view
+   - Use the auto-refresh dropdown in the toolbar
+   - Choose from Off, 10s, 30s, 1m, or 5m intervals
+   - Perfect for monitoring dashboards and live data
+
+### Use Cases
+
+- **Dashboard Queries**: Save complex reporting queries for quick access
+- **Monitoring**: Set up auto-refreshing views for system monitoring
+- **Frequent Reports**: Store commonly-used business intelligence queries
+- **Data Exploration**: Save interesting queries during data analysis
+- **Team Collaboration**: Share query patterns (views are user-specific but queries can be shared)
+
+### Technical Details
+
+- Views are stored securely in the application database
+- Each view includes complete query text, metadata, and execution context
+- Views are isolated per user and connection for security
+- Supports both SQL and Visual Query Builder query types
+- Auto-refresh uses efficient background timers with proper cleanup
 
 ## 🔌 Connecting to Databases
 
@@ -416,77 +509,135 @@ docker exec -it pginspect-database-1 psql -U postgres -d pgadmin
 psql "postgresql://user:pass@host:port/db"
 ```
 
+## 💻 Development Setup
+
 ### Prerequisites
 
-- [Bun](https://bun.sh) (recommended) or Node.js 18+
-- Docker (for local PostgreSQL)
+- [Node.js](https://nodejs.org) 18+ or [Bun](https://bun.sh) (recommended)
+- [Docker](https://docker.com) (for PostgreSQL database)
 - Git
 
-### Setup
+### Native Development (Recommended)
 
-1. Clone the repository:
-```sh
+This setup runs the frontend and backend natively on your machine, with only PostgreSQL in Docker.
+
+#### Step 1: Clone and Install
+
+```bash
 git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-```
+cd pginspect
 
-2. Install dependencies:
-```sh
-bun install
-# or
+# Install dependencies
 npm install
+# or
+bun install
 ```
 
-3. Copy environment variables:
-```sh
-cp .env.example .env.development
+#### Step 2: Environment Setup
+
+```bash
+cp .env.example .env
 ```
 
-4. Start PostgreSQL database:
-```sh
-docker run -d \
-  --name postgres-dev \
-  -p 5432:5432 \
+Edit `.env` with your configuration:
+
+```env
+# Database Configuration
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pgadmin
+
+# Server Configuration  
+PORT=3000
+NODE_ENV=development
+
+# Clerk Authentication (get from https://dashboard.clerk.com)
+CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+CLERK_SECRET_KEY=sk_test_your_key_here
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# Encryption Key (generate with: openssl rand -base64 32)
+ENCRYPTION_KEY=your-32-character-encryption-key-here
+```
+
+#### Step 3: Start PostgreSQL Database
+
+```bash
+# Start PostgreSQL in Docker
+docker run --name pginspect-db \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=pgadmin \
-  postgres:16-alpine
+  -p 5432:5432 \
+  -d postgres:15
+
+# Initialize database schema
+docker exec -i pginspect-db psql -U postgres -d pgadmin < db/schema.sql
 ```
 
-5. Start the development servers:
+#### Step 4: Start Development Servers
 
-**Terminal 1 - Backend:**
-```sh
-bun run server:dev
-# or
-npm run server:dev
-```
-
-**Terminal 2 - Frontend:**
-```sh
-bun run dev
-# or
+```bash
+# Start both frontend and backend with hot reload
 npm run dev
+
+# This starts:
+# - Frontend (Vite): http://localhost:8080
+# - Backend (Bun): http://localhost:3000
 ```
 
-6. Open http://localhost:8080 in your browser
+#### Step 5: Access Your App
+
+Open http://localhost:8080 in your browser.
+
+### Port Configuration
+
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Frontend** | `8080` | `http://localhost:8080` | React app (Vite dev server) |
+| **Backend** | `3000` | `http://localhost:3000` | API server (Bun with hot reload) |
+| **Database** | `5432` | `localhost:5432` | PostgreSQL (Docker container) |
 
 ### Development Scripts
 
-```sh
-# Frontend development server
-bun run dev
+```bash
+# Start both frontend and backend
+npm run dev
 
-# Backend development server (with hot reload)
-bun run server:dev
+# Start only frontend
+npm run dev:frontend
 
-# Build frontend for production
-bun run build
+# Start only backend  
+npm run dev:backend
+
+# Build for production
+npm run build
 
 # Run tests
-bun test
+npm run test
 
 # Lint code
-bun run lint
+npm run lint
+```
+
+### Alternative: Manual Process Control
+
+If you prefer to run processes separately:
+
+```bash
+# Terminal 1 - Backend
+npm run dev:backend
+
+# Terminal 2 - Frontend
+npm run dev:frontend
+```
+
+### Docker Development (Alternative)
+
+If you prefer to run everything in Docker:
+
+```bash
+# Start all services in Docker
+docker-compose up --build
+
+# Access at http://localhost:3000
 ```
 
 ## 🐳 Docker Deployment
@@ -518,6 +669,13 @@ docker-compose up --build
 ```bash
 docker-compose down
 ```
+
+### Port Configuration (Docker)
+
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Application** | `3000` | `http://localhost:3000` | Full app (frontend + backend) |
+| **Database** | `5432` | `localhost:5432` | PostgreSQL container |
 
 ### Why "database" as hostname?
 
@@ -637,6 +795,14 @@ railway connect postgres
 ### Queries
 - `POST /api/query/execute` - Execute SQL query
 - `POST /api/query/explain` - Get query execution plan
+
+### Views
+- `GET /api/views?connectionId=:id` - List saved views for connection
+- `GET /api/views/:id` - Get specific view details
+- `POST /api/views` - Create new saved view
+- `PUT /api/views/:id` - Update existing view
+- `DELETE /api/views/:id` - Delete saved view
+- `POST /api/views/:id/execute` - Execute saved view
 
 ## Environment Variables
 
@@ -1080,6 +1246,9 @@ If you're still having issues:
 ## 📚 Additional Resources
 
 ### Documentation
+- **VIEWS_IMPLEMENTATION_SUMMARY.md** - Complete Saved Views feature documentation
+- **VIEWS.md** - Original requirements document for Saved Views
+- **VIEWS_IMPLEMENTATION_PLAN.md** - Technical implementation plan
 - **LANDING_PAGE_IMPLEMENTATION.md** - Landing page details and user flow
 - **AUTH_SETUP_GUIDE.md** - Complete authentication setup guide
 - **AUTH_IMPLEMENTATION.md** - Technical implementation details
@@ -1125,6 +1294,8 @@ For issues and questions:
 
 ### Powerful Features
 - **Visual Query Builder**: Build complex queries without SQL knowledge
+- **Saved Views**: Save frequently-used queries for instant access
+- **Auto-Refresh**: Monitor live data with configurable refresh intervals
 - **Schema Inspector**: Explore database structure with detailed metadata
 - **SQL Editor**: Monaco-powered editor with syntax highlighting
 - **Real-time Results**: Instant query execution with interactive tables
@@ -1150,6 +1321,31 @@ Built with ❤️ by developers, for developers
 
 ### For Impatient Developers
 
+**Native Development (Recommended):**
+```bash
+# 1. Clone and setup
+git clone <YOUR_REPO>
+cd pginspect
+npm install
+
+# 2. Add Clerk keys to .env
+# Get from https://dashboard.clerk.com
+echo "CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
+echo "CLERK_SECRET_KEY=sk_test_..." >> .env
+echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
+echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
+
+# 3. Start database
+docker run --name pginspect-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pgadmin -p 5432:5432 -d postgres:15
+
+# 4. Start app
+npm run dev
+
+# 5. Open browser
+open http://localhost:8080
+```
+
+**Docker (Alternative):**
 ```bash
 # 1. Clone and setup
 git clone <YOUR_REPO>
@@ -1177,6 +1373,9 @@ open http://localhost:3000
 - ✅ Encrypted password storage
 - ✅ Visual query builder
 - ✅ SQL editor with Monaco
+- ✅ **Saved Views** - Save & reuse queries
+- ✅ **Auto-Refresh Views** - Live data monitoring
+- ✅ **Tabbed Sidebar** - Tables & Views navigation
 - ✅ Schema inspector
 - ✅ Real-time results
 - ✅ Multi-connection support
@@ -1184,6 +1383,18 @@ open http://localhost:3000
 
 ### Test Database Connection
 
+**Native Development:**
+Use the Docker PostgreSQL database:
+```
+Host: localhost
+Port: 5432
+Database: pgadmin
+Username: postgres
+Password: postgres
+SSL: disable
+```
+
+**Docker Deployment:**
 Use the included Docker PostgreSQL:
 ```
 Host: database

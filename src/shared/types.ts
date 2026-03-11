@@ -37,6 +37,7 @@ export interface TableInfo {
 
 export interface ConnectionInfo {
   id?: string;
+  savedConnectionId?: number; // The numeric ID from user_connections table
   name: string;
   host: string;
   port: number;
@@ -102,4 +103,41 @@ export interface DataDeleteRequest {
   schema: string;
   table: string;
   where: Record<string, unknown>;
+}
+
+export interface SavedView {
+  id: string;
+  userId: string;
+  connectionId: number;
+  schemaName: string;
+  viewName: string;
+  description?: string;
+  queryText: string;
+  queryType: 'sql' | 'visual';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateViewRequest {
+  connectionId: number;
+  schemaName: string;
+  viewName: string;
+  description?: string;
+  queryText: string;
+  queryType: 'sql' | 'visual';
+}
+
+export interface UpdateViewRequest {
+  viewName?: string;
+  description?: string;
+  queryText?: string;
+  queryType?: 'sql' | 'visual';
+}
+
+export interface ViewExecutionRequest {
+  viewId: string;
+}
+
+export interface ViewListResponse {
+  views: SavedView[];
 }

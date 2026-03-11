@@ -90,8 +90,8 @@ connections.post('/connect', validateConnectionRequest, async (c) => {
       ...parsed,
     };
 
-    // Save connection to database
-    await saveUserConnection(auth.userId, connectionInfo);
+    // Save connection to database first
+    const savedConnection = await saveUserConnection(auth.userId, connectionInfo);
 
     const { id, sql } = await createConnection(connectionInfo);
 
@@ -109,6 +109,7 @@ connections.post('/connect', validateConnectionRequest, async (c) => {
       success: true,
       data: {
         connectionId: id,
+        savedConnectionId: savedConnection.id, // Add the saved connection ID
         schemas,
       },
     });

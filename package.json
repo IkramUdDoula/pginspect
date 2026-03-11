@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"bun --watch src/server/index.ts\"",
+    "dev": "concurrently \"vite\" \"start-backend.bat\"",
     "dev:frontend": "vite",
     "dev:backend": "bun --watch src/server/index.ts",
     "server:dev": "bun --watch src/server/index.ts",

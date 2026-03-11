@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useConnection } from "@/contexts/ConnectionContext";
+import { useViews } from "@/contexts/ViewContext";
 import { ConnectionManager } from "@/components/connection/ConnectionManager";
 import { TopNavbar } from "@/components/layout/TopNavbar";
 import { LeftSidebar } from "@/components/layout/LeftSidebar";
 import { RightInspector } from "@/components/layout/RightInspector";
 import { VisualQueryBuilder } from "@/components/editor/VisualQueryBuilder";
 import { SQLEditor } from "@/components/editor/SQLEditor";
+import { SaveViewDialog } from "@/components/editor/SaveViewDialog";
+import { ViewToolbar } from "@/components/editor/ViewToolbar";
 import { ResultsPanel } from "@/components/results/ResultsPanel";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { blocksToSQL } from "@/lib/queryBuilder";
-import { Play, Layers, Code, PanelRight, Plus } from "lucide-react";
+import { Play, Layers, Code, PanelRight, Plus, Save } from "lucide-react";
 
 function AppContent() {
   const ctx = useConnection();
@@ -20,6 +23,9 @@ function AppContent() {
     setSqlText, sqlText, runQuery, showDashboard, isInspectorOpen, setIsInspectorOpen,
     selectedTable, setCreatingRecord, setEditingRecord, isInitialLoad,
   } = ctx;
+
+  const { isViewMode } = useViews();
+  const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
 
   const showConnectionManager = !isInitialLoad && connections.length === 0 && !activeConnection;
 
@@ -52,62 +58,77 @@ function AppContent() {
             <Dashboard />
           ) : (
             <>
-              {/* Editor toolbar */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background">
-                <div className="flex items-center gap-1 bg-secondary rounded-lg p-0.5">
-                  <button onClick={() => setEditorMode("visual")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                    <Layers className="h-3.5 w-3.5" /> Visual Builder
-                  </button>
-                  <button onClick={() => setEditorMode("sql")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "sql" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                    <Code className="h-3.5 w-3.5" /> SQL Editor
-                  </button>
-                </div>
+              {/* Editor toolbar or View toolbar */}
+              {isViewMode ? (
+                <ViewToolbar />
+              ) : (
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background">
+                  <div className="flex items-center gap-1 bg-secondary rounded-lg p-0.5">
+                    <button onClick={() => setEditorMode("visual")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                      <Layers className="h-3.5 w-3.5" /> Visual Builder
+                    </button>
+                    <button onClick={() => setEditorMode("sql")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "sql" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                      <Code className="h-3.5 w-3.5" /> SQL Editor
+                    </button>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  {selectedTable && (
-                    <span className="text-xs text-muted-foreground font-mono">{selectedTable.name}</span>
-                  )}
-                  <button onClick={() => setIsInspectorOpen(!isInspectorOpen)} className={`p-1.5 rounded hover:bg-surface-hover ${isInspectorOpen ? "text-primary" : "text-muted-foreground"}`}>
-                    <PanelRight className="h-4 w-4" />
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (!selectedTable) return;
-                      setCreatingRecord(true);
-                      setEditingRecord(null);
-                      setIsInspectorOpen(true);
-                    }}
-                    disabled={!selectedTable}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Create
-                  </button>
-                  <button onClick={runQuery} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
-                    <Play className="h-3.5 w-3.5" /> Run
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {selectedTable && (
+                      <span className="text-xs text-muted-foreground font-mono">{selectedTable.name}</span>
+                    )}
+                    <button onClick={() => setIsInspectorOpen(!isInspectorOpen)} className={`p-1.5 rounded hover:bg-surface-hover ${isInspectorOpen ? "text-primary" : "text-muted-foreground"}`}>
+                      <PanelRight className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (!selectedTable) return;
+                        setCreatingRecord(true);
+                        setEditingRecord(null);
+                        setIsInspectorOpen(true);
+                      }}
+                      disabled={!selectedTable}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Create
+                    </button>
+                    <button 
+                      onClick={() => setShowSaveViewDialog(true)}
+                      disabled={!sqlText.trim() || !activeConnection}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Save className="h-3.5 w-3.5" /> Save as View
+                    </button>
+                    <button onClick={runQuery} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
+                      <Play className="h-3.5 w-3.5" /> Run
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Editor + Results split */}
               <PanelGroup direction="vertical" className="flex-1">
-                <Panel defaultSize={50} minSize={20}>
-                  <div className="h-full overflow-hidden">
-                    {editorMode === "visual" ? <VisualQueryBuilder /> : <SQLEditor />}
-                  </div>
-                </Panel>
+                {!isViewMode && (
+                  <>
+                    <Panel defaultSize={50} minSize={20}>
+                      <div className="h-full overflow-hidden">
+                        {editorMode === "visual" ? <VisualQueryBuilder /> : <SQLEditor />}
+                      </div>
+                    </Panel>
 
-                {/* SQL Preview (visual mode) */}
-                {editorMode === "visual" && sqlText && (
-                  <div className="border-t border-border px-3 py-2 bg-card/50 flex-shrink-0">
-                    <div className="text-[10px] uppercase text-muted-foreground mb-1">Generated SQL</div>
-                    <pre className="text-xs font-mono text-foreground/70 whitespace-pre-wrap max-h-16 overflow-y-auto">{sqlText}</pre>
-                  </div>
+                    {/* SQL Preview (visual mode) */}
+                    {editorMode === "visual" && sqlText && (
+                      <div className="border-t border-border px-3 py-2 bg-card/50 flex-shrink-0">
+                        <div className="text-[10px] uppercase text-muted-foreground mb-1">Generated SQL</div>
+                        <pre className="text-xs font-mono text-foreground/70 whitespace-pre-wrap max-h-16 overflow-y-auto">{sqlText}</pre>
+                      </div>
+                    )}
+
+                    <PanelResizeHandle className="h-1 bg-border hover:bg-primary/40 transition-colors cursor-row-resize" />
+                  </>
                 )}
 
-                <PanelResizeHandle className="h-1 bg-border hover:bg-primary/40 transition-colors cursor-row-resize" />
-
-                <Panel defaultSize={50} minSize={15}>
-                  <div className="h-full border-t border-border overflow-hidden">
+                <Panel defaultSize={isViewMode ? 100 : 50} minSize={15}>
+                  <div className={`h-full ${isViewMode ? '' : 'border-t border-border'} overflow-hidden`}>
                     <ResultsPanel />
                   </div>
                 </Panel>
@@ -118,6 +139,12 @@ function AppContent() {
 
         {!showDashboard && <RightInspector />}
       </div>
+
+      {/* Save View Dialog */}
+      <SaveViewDialog 
+        open={showSaveViewDialog} 
+        onOpenChange={setShowSaveViewDialog} 
+      />
     </div>
   );
 }
