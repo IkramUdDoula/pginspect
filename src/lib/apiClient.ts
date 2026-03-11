@@ -251,6 +251,44 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // Data manipulation
+  async insertData(
+    connectionId: string,
+    schema: string,
+    table: string,
+    data: Record<string, unknown>
+  ): Promise<ApiResponse<{ rowsAffected: number }>> {
+    return this.request('/api/data/insert', {
+      method: 'POST',
+      body: JSON.stringify({ connectionId, schema, table, data }),
+    });
+  }
+
+  async updateData(
+    connectionId: string,
+    schema: string,
+    table: string,
+    where: Record<string, unknown>,
+    data: Record<string, unknown>
+  ): Promise<ApiResponse<{ rowsAffected: number }>> {
+    return this.request('/api/data/update', {
+      method: 'POST',
+      body: JSON.stringify({ connectionId, schema, table, where, data }),
+    });
+  }
+
+  async deleteData(
+    connectionId: string,
+    schema: string,
+    table: string,
+    where: Record<string, unknown>
+  ): Promise<ApiResponse<{ rowsAffected: number }>> {
+    return this.request('/api/data/delete', {
+      method: 'POST',
+      body: JSON.stringify({ connectionId, schema, table, where }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
