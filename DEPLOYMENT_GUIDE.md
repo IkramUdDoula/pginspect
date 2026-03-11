@@ -41,7 +41,7 @@ bun install
 
 ### Step 3: Configure Environment
 
-Create `.env` file:
+Create `.env` file for native development:
 
 ```bash
 cp .env.example .env
@@ -130,8 +130,10 @@ npm run dev
 
 # This starts:
 # - Frontend (Vite): http://localhost:8080
-# - Backend (Bun): http://localhost:3000
+# - Backend (Node.js/Bun): http://localhost:3000
 ```
+
+**Note:** The `npm run dev` command automatically loads environment variables from `.env` file, ensuring the correct PORT is used even if you have system environment variables set.
 
 ### Step 7: Verify Installation
 
@@ -189,27 +191,75 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 ```
 
-### Step 2: Configure Environment
+### Step 2: Configure Docker Environment
 
-Create `.env` file:
+Create Docker-specific environment file:
 
 ```bash
-cp .env.example .env
+cp .env.docker.example .env.docker
 ```
 
-Edit `.env` with your values (same as above, but note the DATABASE_URL difference):
+Edit `.env.docker` with your values:
 
 ```env
+# Docker-specific environment configuration
 # Database Configuration (Docker internal network)
-DATABASE_URL=postgresql://postgres:postgres@database:5432/pgadmin
+DATABASE_URL=postgresql://postgres:postgres@database:5432/pgladmin
+DB_POOL_MIN=2
+DB_POOL_MAX=5
 
-# ... rest of configuration same as native setup
+# Server Configuration
+PORT=9000
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# Security
+CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+QUERY_TIMEOUT=30000
+MAX_RESULT_ROWS=1000
+
+# Features
+ENABLE_QUERY_LOGGING=true
+ENABLE_EXPLAIN=true
+
+# Frontend (Vite)
+VITE_API_URL=http://localhost:9000
+VITE_API_TIMEOUT=30000
+
+# Clerk Authentication (get from https://dashboard.clerk.com)
+CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+CLERK_SECRET_KEY=sk_test_your_key_here
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# Encryption Key (generate with: openssl rand -base64 32)
+ENCRYPTION_KEY=your-32-character-encryption-key-here
+```
+
+**Key differences from native development:**
+- Uses `database:5432` instead of `localhost:5432` for DATABASE_URL
+- Backend runs on port 9000 (Docker internal)
+- Frontend runs on port 5000 (Docker internal)
+- Frontend API URL points to `http://localhost:9000`
+
+**Get Clerk Keys:**
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Create new application
+3. Enable Google and Microsoft OAuth
+4. Copy keys from "API Keys" section
+
+**Generate Encryption Key:**
+```bash
+# Mac/Linux
+openssl rand -base64 32
+
+# Windows (PowerShell)
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
 ### Step 3: Start Docker Services
 
 ```bash
-# Start database and app
+# Start database and app with Docker-specific environment
 docker-compose up -d
 
 # Verify containers are running
@@ -219,9 +269,11 @@ docker ps
 Expected output:
 ```
 NAMES                  STATUS                 PORTS
-pginspect-app-1        Up X minutes (healthy) 0.0.0.0:3000->3000/tcp
+pginspect-app-1        Up X minutes (healthy) 0.0.0.0:5000->5000/tcp, 0.0.0.0:9000->9000/tcp
 pginspect-database-1   Up X minutes (healthy) 0.0.0.0:5432->5432/tcp
 ```
+
+**Note:** The docker-compose.yml automatically uses `.env.docker` for Docker-specific configuration, while native development uses `.env`.
 
 ### Step 4: Initialize Database
 
@@ -249,7 +301,7 @@ docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 
 ### Step 5: Access Application
 
-Open http://localhost:3000 in your browser
+Open http://localhost:5000 in your browser
 
 ### Step 6: Sign In & Connect
 
@@ -273,15 +325,20 @@ Open http://localhost:3000 in your browser
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
 | **Frontend** | `8080` | `http://localhost:8080` | React app (Vite dev server) |
-| **Backend** | `3000` | `http://localhost:3000` | API server (Bun with hot reload) |
+| **Backend** | `3000` | `http://localhost:3000` | API server (Node.js/Bun with hot reload) |
 | **Database** | `5432` | `localhost:5432` | PostgreSQL (Docker container) |
 
 ### Docker Deployment
 
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
-| **Application** | `3000` | `http://localhost:3000` | Full app (frontend + backend) |
+| **Frontend** | `5000` | `http://localhost:5000` | React app (Vite in container) |
+| **Backend** | `9000` | `http://localhost:9000` | API server (Bun in container) |
 | **Database** | `5432` | `localhost:5432` | PostgreSQL container |
+
+**Environment Files:**
+- **Native**: Uses `.env` (backend on port 3000, frontend on port 8080)
+- **Docker**: Uses `.env.docker` (backend on port 9000, frontend on port 5000)
 
 ## Database Schema
 
@@ -504,7 +561,7 @@ Create `.env.production`:
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://user:pass@your-db-host:5432/dbname
-PORT=3000
+PORT=9000
 LOG_LEVEL=info
 
 # Use production Clerk keys

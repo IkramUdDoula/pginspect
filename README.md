@@ -99,26 +99,6 @@
 
 Get up and running in 5 minutes:
 
-### Option 1: Docker (Recommended for Production)
-
-```bash
-# 1. Clone the repository
-git clone <YOUR_GIT_URL>
-cd pginspect
-
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with your Clerk keys
-
-# 3. Start with Docker
-docker-compose up --build
-
-# 4. Open your browser
-# http://localhost:3000
-```
-
-### Option 2: Native Development (Recommended for Development)
-
 ```bash
 # 1. Clone the repository
 git clone <YOUR_GIT_URL>
@@ -134,7 +114,7 @@ cp .env.example .env
 # 4. Start PostgreSQL database (Docker)
 docker run --name pginspect-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pgadmin -p 5432:5432 -d postgres:15
 
-# 5. Start both frontend and backend
+# 5. Start development servers
 npm run dev
 
 # 6. Open your browser
@@ -143,15 +123,16 @@ npm run dev
 
 That's it! 🎉
 
+**For production deployment, Docker, and advanced setup**, see the [📖 Deployment Guide](DEPLOYMENT_GUIDE.md).
+
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [🚀 Deployment Guide](DEPLOYMENT_GUIDE.md) | Complete deployment instructions |
+| [🚀 Deployment Guide](DEPLOYMENT_GUIDE.md) | Complete deployment, Docker, and production setup |
 | [🔐 Authentication Setup](docs/AUTH_SETUP_GUIDE.md) | Clerk configuration guide |
 | [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) | Database connection examples |
 | [💾 Views Implementation](docs/VIEWS_IMPLEMENTATION_SUMMARY.md) | Saved Views feature details |
-| [💻 Development Guide](docs/DEVELOPMENT.md) | Local development setup |
 | [🏗️ Architecture](docs/AUTH_IMPLEMENTATION.md) | Technical implementation details |
 
 ## 🎯 Key Features Explained
@@ -589,10 +570,18 @@ Open http://localhost:8080 in your browser.
 
 ### Port Configuration
 
+#### Local Development (Native)
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
 | **Frontend** | `8080` | `http://localhost:8080` | React app (Vite dev server) |
-| **Backend** | `3000` | `http://localhost:3000` | API server (Bun with hot reload) |
+| **Backend** | `3000` | `http://localhost:3000` | API server (Bun/Node with hot reload) |
+| **Database** | `5432` | `localhost:5432` | PostgreSQL (Docker container) |
+
+#### Docker Deployment
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Frontend** | `5000` | `http://localhost:5000` | React app (Vite in container) |
+| **Backend** | `9000` | `http://localhost:9000` | API server (Bun in container) |
 | **Database** | `5432` | `localhost:5432` | PostgreSQL (Docker container) |
 
 ### Development Scripts
@@ -637,7 +626,9 @@ If you prefer to run everything in Docker:
 # Start all services in Docker
 docker-compose up --build
 
-# Access at http://localhost:3000
+# Access at:
+# Frontend: http://localhost:5000
+# Backend API: http://localhost:9000
 ```
 
 ## 🐳 Docker Deployment
@@ -650,8 +641,9 @@ docker-compose up --build
 ```
 
 2. **Access the application:**
-   - Application: http://localhost:3000
-   - API Health: http://localhost:3000/api/health
+   - Frontend: http://localhost:5000
+   - Backend API: http://localhost:9000
+   - API Health: http://localhost:9000/api/health
 
 3. **Create your first connection:**
    - Click "New Connection" in the app
@@ -674,7 +666,8 @@ docker-compose down
 
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
-| **Application** | `3000` | `http://localhost:3000` | Full app (frontend + backend) |
+| **Frontend** | `5000` | `http://localhost:5000` | React app (Vite) |
+| **Backend** | `9000` | `http://localhost:9000` | API server (Bun) |
 | **Database** | `5432` | `localhost:5432` | PostgreSQL container |
 
 ### Why "database" as hostname?
@@ -804,17 +797,18 @@ railway connect postgres
 - `DELETE /api/views/:id` - Delete saved view
 - `POST /api/views/:id/execute` - Execute saved view
 
-## Environment Variables
+## ⚙️ Configuration
 
-See `.env.example` for all available configuration options.
+### Environment Variables
 
-Key variables:
+Key variables for local development:
+- `PORT` - Backend server port (default: 3000)
 - `DATABASE_URL` - PostgreSQL connection string
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production)
-- `CORS_ORIGIN` - Allowed CORS origins
-- `QUERY_TIMEOUT` - Query execution timeout (ms)
-- `MAX_RESULT_ROWS` - Maximum rows returned per query
+- `CLERK_PUBLISHABLE_KEY` - Clerk authentication key
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `ENCRYPTION_KEY` - AES-256 encryption key for passwords
+
+See `.env.example` for all available options and the [📖 Deployment Guide](DEPLOYMENT_GUIDE.md) for production configuration.
 
 ## Security
 
@@ -839,56 +833,30 @@ Key variables:
 7. Keep dependencies updated
 8. Review Clerk security logs regularly
 
-## What technologies are used for this project?
+## 🛠 Tech Stack
 
-This project is built with:
+**Frontend:** React 18 • TypeScript • Vite • TailwindCSS • shadcn/ui • Framer Motion  
+**Backend:** Bun • Hono • Node.js • PostgreSQL  
+**Authentication:** Clerk (Google & Microsoft OAuth)  
+**Database:** PostgreSQL 16 • postgres.js  
+**Security:** AES-256-GCM • JWT • SQL Injection Prevention  
+**Deployment:** Docker • Railway • Render
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Bun
-- Hono
-- PostgreSQL
-- Docker
+## 🐛 Troubleshooting
 
-## Deployment
+### Common Issues
 
-### Railway (Recommended)
-
-1. Push your code to GitHub
-2. Create a new project on [Railway](https://railway.app)
-3. Add PostgreSQL database service
-4. Connect your GitHub repository
-5. Configure environment variables
-6. Deploy automatically on push
-
-### Docker
-
-Build and deploy using the included Dockerfile:
-
-```sh
-docker build -t pgadmin .
-docker run -p 3000:3000 --env-file .env pgadmin
-```
-
-## Troubleshooting
-
-### Backend won't start
-- Ensure PostgreSQL is running
-- Check DATABASE_URL in .env
+**Backend won't start**
+- Ensure PostgreSQL is running: `docker ps`
+- Check `.env` file has correct PORT=3000
 - Verify port 3000 is available
 
-### Frontend can't connect to backend
-- Check VITE_API_URL in .env
+**Frontend can't connect to backend**
+- Check VITE_API_URL in `.env` is `http://localhost:3000`
 - Ensure backend is running on port 3000
-- Verify CORS_ORIGIN includes frontend URL
+- Check browser console for errors
 
-### Docker build fails
-- Clear Docker cache: `docker system prune -a`
-- Check .dockerignore file
-- Ensure all dependencies are in package.json
+**For detailed troubleshooting**, see the [📖 Deployment Guide](DEPLOYMENT_GUIDE.md).
 
 ## Contributing
 
@@ -1319,97 +1287,26 @@ Built with ❤️ by developers, for developers
 
 ## 🎉 Quick Start Summary
 
-### For Impatient Developers
+**For Impatient Developers:**
 
-**Native Development (Recommended):**
 ```bash
-# 1. Clone and setup
-git clone <YOUR_REPO>
-cd pginspect
+git clone <YOUR_REPO> && cd pginspect
 npm install
-
-# 2. Add Clerk keys to .env
-# Get from https://dashboard.clerk.com
-echo "CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
-echo "CLERK_SECRET_KEY=sk_test_..." >> .env
-echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
-echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
-
-# 3. Start database
+cp .env.example .env
+# Add your Clerk keys to .env
 docker run --name pginspect-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pgadmin -p 5432:5432 -d postgres:15
-
-# 4. Start app
 npm run dev
-
-# 5. Open browser
-open http://localhost:8080
+# Open http://localhost:8080
 ```
 
-**Docker (Alternative):**
-```bash
-# 1. Clone and setup
-git clone <YOUR_REPO>
-cd pginspect
+**What You Get:**
+✅ Professional landing page • ✅ Google & Microsoft OAuth • ✅ Encrypted connections • ✅ Visual query builder • ✅ SQL editor • ✅ Saved Views • ✅ Auto-refresh • ✅ Schema inspector • ✅ Dark theme
 
-# 2. Add Clerk keys to .env
-# Get from https://dashboard.clerk.com
-echo "CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
-echo "CLERK_SECRET_KEY=sk_test_..." >> .env
-echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_..." >> .env
-echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
+**For Docker, production, and advanced setup:** [📖 Deployment Guide](DEPLOYMENT_GUIDE.md)
 
-# 3. Start with Docker
-docker-compose up --build
+---
 
-# 4. Open browser
-open http://localhost:3000
-```
-
-### What You Get
-
-- ✅ Professional landing page at `/`
-- ✅ Google & Microsoft OAuth sign-in
-- ✅ Persistent database connections
-- ✅ Encrypted password storage
-- ✅ Visual query builder
-- ✅ SQL editor with Monaco
-- ✅ **Saved Views** - Save & reuse queries
-- ✅ **Auto-Refresh Views** - Live data monitoring
-- ✅ **Tabbed Sidebar** - Tables & Views navigation
-- ✅ Schema inspector
-- ✅ Real-time results
-- ✅ Multi-connection support
-- ✅ Dark theme UI
-
-### Test Database Connection
-
-**Native Development:**
-Use the Docker PostgreSQL database:
-```
-Host: localhost
-Port: 5432
-Database: pgadmin
-Username: postgres
-Password: postgres
-SSL: disable
-```
-
-**Docker Deployment:**
-Use the included Docker PostgreSQL:
-```
-Host: database
-Port: 5432
-Database: pgadmin
-Username: postgres
-Password: postgres
-SSL: disable
-```
-
-Sample data included:
-- 5 users
-- 5 orders
-- 5 products
-- Order items
+**Built with ❤️ for developers who love PostgreSQL**
 - Order summary view
 
 ---

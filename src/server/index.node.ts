@@ -1,7 +1,8 @@
-// Server entry point
+// Server entry point for Node.js runtime
 
 import { Hono } from 'hono';
-import { serveStatic } from 'hono/bun';
+import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { logger } from './utils/logger';
 import { corsMiddleware } from './middleware/cors';
 import { errorHandler } from './middleware/errorHandler';
@@ -77,7 +78,10 @@ logger.info('Starting server', {
   environment: process.env.NODE_ENV || 'development',
 });
 
-export default {
-  port: PORT,
+// Start the server using Node.js HTTP server
+serve({
   fetch: app.fetch,
-};
+  port: PORT,
+});
+
+console.log(`Server running on http://localhost:${PORT}`);

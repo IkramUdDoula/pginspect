@@ -4,14 +4,16 @@ WORKDIR /app
 
 # Build arguments for Vite
 ARG VITE_CLERK_PUBLISHABLE_KEY
-ARG VITE_API_URL=http://localhost:3000
+ARG VITE_API_URL=http://localhost:9000
 ARG VITE_API_TIMEOUT=30000
 
 # Set as environment variables
 ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_TIMEOUT=$VITE_API_TIMEOUT
-ENV PORT=3000
+ENV VITE_PORT=5000
+ENV PORT=9000
+ENV DOCKER_ENV=true
 
 # Copy package files and install dependencies
 COPY package.json bun.lockb ./
@@ -23,11 +25,11 @@ COPY . .
 # Build frontend initially
 RUN bun run build
 
-EXPOSE 3000 8080
+EXPOSE 9000 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD bun run -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+  CMD bun run -e "fetch('http://localhost:9000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
 # Use development command that includes hot reloading
 CMD ["bun", "run", "dev"]
