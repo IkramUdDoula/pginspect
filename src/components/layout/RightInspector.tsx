@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/apiClient";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,48 +18,157 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function RightInspector() {
-  const { selectedTable, isInspectorOpen, setIsInspectorOpen, editingRecord, setEditingRecord, creatingRecord, setCreatingRecord } = useConnection();
+  const { 
+    selectedTable, 
+    isInspectorOpen, 
+    setIsInspectorOpen, 
+    editingRecord, 
+    setEditingRecord, 
+    creatingRecord, 
+    setCreatingRecord,
+    activeConnection,
+    activeSchema
+  } = useConnection();
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (editingRecord) {
       setFormData({ ...editingRecord });
-    } else if (creatingRecord) {
-      // Initialize form with default values for create mode
+    } else if (creatingRecord && selectedTable) {
+      // Initialize form with empty values for create mode
       const defaultData: Record<string, unknown> = {};
-      selectedTable?.columns.forEach(col => {
-        if (col.defaultValue && !col.isPrimary) {
-          defaultData[col.name] = "";
+      selectedTable.columns.forEach(col => {
+        // Initialize all non-auto-generated fields
+        if (!col.isPrimaryKey || !col.defaultValue) {
+          defaultData[col.name] = col.type === 'boolean' ? false : '';
         }
       });
       setFormData(defaultData);
+    } else if (!editingRecord && !creatingRecord) {
+      // Clear form when neither editing nor creating
+      setFormData({});
     }
   }, [editingRecord, creatingRecord, selectedTable]);
 
   const isVisible = isInspectorOpen && !!selectedTable;
   const targetWidth = isVisible ? (editingRecord || creatingRecord ? 320 : 288) : 0;
 
-  const formatSize = (kb: number) => {
+  const formatSize = (bytes: number) => {
+    const kb = bytes / 1024;
     if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
-    return `${kb} KB`;
+    return `${kb.toFixed(1)} KB`;
   };
 
-  const handleSave = () => {
-    if (editingRecord) {
-      toast.success("Record updated (simulated)");
-      setEditingRecord(null);
-    } else if (creatingRecord) {
-      toast.success("Record created (simulated)");
-      setCreatingRecord(false);
-      // Reset form for next create
-      const defaultData: Record<string, unknown> = {};
-      selectedTable?.columns.forEach(col => {
-        if (col.defaultValue && !col.isPrimary) {
-          defaultData[col.name] = "";
+  const handleSave = async () => {
+    if (!activeConnection?.id || !selectedTable) {
+      toast.error("No active connection or table selected");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (editingRecord) {
+        // Build WHERE clause from primary key(s)
+        const where: Record<string, unknown> = {};
+        selectedTable.columns
+          .filter(col => col.isPrimaryKey)
+          .forEach(col => {
+            where[col.name] = editingRecord[col.name];
+          });
+
+        if (Object.keys(where).length === 0) {
+          toast.error("Cannot update: no primary key found");
+          return;
         }
-      });
-      setFormData(defaultData);
+
+        // Build data object (exclude primary keys)
+        const data: Record<string, unknown> = {};
+        Object.keys(formData).forEach(key => {
+          const col = selectedTable.columns.find(c => c.name === key);
+          if (col && !col.isPrimaryKey) {
+            data[key] = formData[key];
+          }
+        });
+
+        console.log('=== UPDATE RECORD ===');
+        console.log('Table:', `${activeSchema}.${selectedTable.name}`);
+        console.log('WHERE:', where);
+        console.log('Data:', data);
+
+        const response = await apiClient.updateData(
+          activeConnection.id,
+          activeSchema,
+          selectedTable.name,
+          where,
+          data
+        );
+
+        console.log('Update response:', response);
+
+        if (response.success) {
+          console.log('✓ Record updated successfully');
+          toast.success(`Record updated successfully`);
+          setEditingRecord(null);
+        } else {
+          console.error('✗ Update failed:', response.error);
+          toast.error(response.error || "Failed to update record");
+        }
+      } else if (creatingRecord) {
+        // Prepare data for insert (exclude auto-generated primary keys)
+        const data: Record<string, unknown> = {};
+        Object.keys(formData).forEach(key => {
+          const col = selectedTable.columns.find(c => c.name === key);
+          // Skip auto-generated primary keys
+          if (col && !(col.isPrimaryKey && col.defaultValue)) {
+            const value = formData[key];
+            // Only include non-empty values or explicitly set values
+            if (value !== '' && value !== null && value !== undefined) {
+              data[key] = value;
+            } else if (col.nullable) {
+              data[key] = null;
+            }
+          }
+        });
+
+        console.log('=== CREATE RECORD ===');
+        console.log('Table:', `${activeSchema}.${selectedTable.name}`);
+        console.log('Data:', data);
+
+        const response = await apiClient.insertData(
+          activeConnection.id,
+          activeSchema,
+          selectedTable.name,
+          data
+        );
+
+        console.log('Insert response:', response);
+
+        if (response.success) {
+          console.log('✓ Record created successfully');
+          if (response.data && 'row' in response.data) {
+            console.log('Created row:', response.data.row);
+          }
+          toast.success(`Record created successfully`);
+          // Reset form for next create
+          const defaultData: Record<string, unknown> = {};
+          selectedTable.columns.forEach(col => {
+            if (!col.isPrimaryKey || !col.defaultValue) {
+              defaultData[col.name] = col.type === 'boolean' ? false : '';
+            }
+          });
+          setFormData(defaultData);
+        } else {
+          console.error('✗ Insert failed:', response.error);
+          toast.error(response.error || "Failed to create record");
+        }
+      }
+    } catch (error) {
+      console.error('✗ Operation exception:', error);
+      toast.error(error instanceof Error ? error.message : "Operation failed");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -66,11 +176,53 @@ export function RightInspector() {
     setFormData((prev) => ({ ...prev, [colName]: value }));
   };
 
-  const handleDelete = () => {
-    if (editingRecord) {
-      toast.success("Record deleted (simulated)");
-      setEditingRecord(null);
-      setShowDeleteDialog(false);
+  const handleDelete = async () => {
+    if (!editingRecord || !activeConnection?.id || !selectedTable) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Build WHERE clause from primary key(s)
+      const where: Record<string, unknown> = {};
+      selectedTable.columns
+        .filter(col => col.isPrimaryKey)
+        .forEach(col => {
+          where[col.name] = editingRecord[col.name];
+        });
+
+      if (Object.keys(where).length === 0) {
+        toast.error("Cannot delete: no primary key found");
+        return;
+      }
+
+      console.log('=== DELETE RECORD ===');
+      console.log('Table:', `${activeSchema}.${selectedTable.name}`);
+      console.log('WHERE:', where);
+
+      const response = await apiClient.deleteData(
+        activeConnection.id,
+        activeSchema,
+        selectedTable.name,
+        where
+      );
+
+      console.log('Delete response:', response);
+
+      if (response.success) {
+        console.log('✓ Record deleted successfully');
+        toast.success("Record deleted successfully");
+        setEditingRecord(null);
+        setShowDeleteDialog(false);
+      } else {
+        console.error('✗ Delete failed:', response.error);
+        toast.error(response.error || "Failed to delete record");
+      }
+    } catch (error) {
+      console.error('✗ Delete exception:', error);
+      toast.error(error instanceof Error ? error.message : "Delete failed");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -101,15 +253,17 @@ export function RightInspector() {
               <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-3">
                 {selectedTable.columns.map((col) => {
                   const value = formData[col.name];
-                  const isPk = col.isPrimary;
+                  const isPk = col.isPrimaryKey;
                   const isAutoGen = isPk && col.defaultValue && creatingRecord;
+                  // Check if column has a foreign key reference
+                  const hasForeignKey = selectedTable.foreignKeys.some(fk => fk.column === col.name);
                   return (
                     <div key={col.name} className="space-y-1">
                       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {isPk ? <Key className="h-3 w-3 text-primary" /> : col.foreignKey ? <Link2 className="h-3 w-3 text-accent" /> : <Hash className="h-3 w-3 text-muted-foreground/50" />}
+                        {isPk ? <Key className="h-3 w-3 text-primary" /> : hasForeignKey ? <Link2 className="h-3 w-3 text-accent" /> : <Hash className="h-3 w-3 text-muted-foreground/50" />}
                         <span className="font-mono">{col.name}</span>
                         <span className="text-[10px] bg-secondary px-1 py-0.5 rounded">{col.type}</span>
-                        {!col.isNullable && !col.defaultValue && !isPk && creatingRecord && (
+                        {!col.nullable && !col.defaultValue && !isPk && creatingRecord && (
                           <span className="text-[9px] text-destructive font-medium">required</span>
                         )}
                       </label>
@@ -119,16 +273,16 @@ export function RightInspector() {
                         </div>
                       ) : col.type === "boolean" ? (
                         <div className="flex items-center gap-2">
-                          <Switch checked={Boolean(value)} onCheckedChange={(checked) => handleFieldChange(col.name, checked)} disabled={isPk && editingRecord} />
+                          <Switch checked={Boolean(value)} onCheckedChange={(checked) => handleFieldChange(col.name, checked)} disabled={isPk && !!editingRecord} />
                           <span className="text-xs text-muted-foreground">{value ? "true" : "false"}</span>
                         </div>
                       ) : (
                         <Input
                           value={value === null || value === undefined ? "" : String(value)}
                           onChange={(e) => handleFieldChange(col.name, e.target.value)}
-                          disabled={isPk && editingRecord}
+                          disabled={isPk && !!editingRecord}
                           className="h-8 text-xs font-mono bg-background"
-                          placeholder={col.isNullable ? "NULL" : col.defaultValue ? `Default: ${col.defaultValue}` : ""}
+                          placeholder={col.nullable ? "NULL" : col.defaultValue ? `Default: ${col.defaultValue}` : ""}
                         />
                       )}
                     </div>
@@ -137,14 +291,14 @@ export function RightInspector() {
               </div>
 
               <div className="p-3 border-t border-border flex gap-2">
-                <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => { setEditingRecord(null); setCreatingRecord(false); }}>Cancel</Button>
+                <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => { setEditingRecord(null); setCreatingRecord(false); }} disabled={isSaving}>Cancel</Button>
                 {editingRecord && (
-                  <Button variant="destructive" size="sm" className="text-xs" onClick={() => setShowDeleteDialog(true)}>
+                  <Button variant="destructive" size="sm" className="text-xs" onClick={() => setShowDeleteDialog(true)} disabled={isSaving}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
-                <Button size="sm" className="flex-1 text-xs" onClick={handleSave}>
-                  <Save className="h-3.5 w-3.5 mr-1" /> {editingRecord ? "Update" : "Create"}
+                <Button size="sm" className="flex-1 text-xs" onClick={handleSave} disabled={isSaving}>
+                  <Save className="h-3.5 w-3.5 mr-1" /> {isSaving ? "Saving..." : editingRecord ? "Update" : "Create"}
                 </Button>
               </div>
             </>
@@ -153,7 +307,7 @@ export function RightInspector() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <div>
                   <h3 className="text-sm font-semibold font-mono">{selectedTable.name}</h3>
-                  <p className="text-xs text-muted-foreground">{selectedTable.rowCount.toLocaleString()} rows · {formatSize(selectedTable.sizeKb)}</p>
+                  <p className="text-xs text-muted-foreground">{selectedTable.rowCount.toLocaleString()} rows · {formatSize(selectedTable.sizeBytes)}</p>
                 </div>
                 <button onClick={() => setIsInspectorOpen(false)} className="text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
@@ -164,14 +318,17 @@ export function RightInspector() {
                 <div className="p-3">
                   <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-medium">Columns ({selectedTable.columns.length})</h4>
                   <div className="space-y-1">
-                    {selectedTable.columns.map((col) => (
-                      <div key={col.name} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-hover text-xs group">
-                        {col.isPrimary ? <Key className="h-3 w-3 text-primary flex-shrink-0" /> : col.foreignKey ? <Link2 className="h-3 w-3 text-accent flex-shrink-0" /> : <Hash className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
-                        <span className="font-mono flex-1 truncate">{col.name}</span>
-                        <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{col.type}</span>
-                        {col.isNullable && <span className="text-[10px] text-muted-foreground/60">null</span>}
-                      </div>
-                    ))}
+                    {selectedTable.columns.map((col) => {
+                      const hasForeignKey = selectedTable.foreignKeys.some(fk => fk.column === col.name);
+                      return (
+                        <div key={col.name} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-hover text-xs group">
+                          {col.isPrimaryKey ? <Key className="h-3 w-3 text-primary flex-shrink-0" /> : hasForeignKey ? <Link2 className="h-3 w-3 text-accent flex-shrink-0" /> : <Hash className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
+                          <span className="font-mono flex-1 truncate">{col.name}</span>
+                          <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{col.type}</span>
+                          {col.nullable && <span className="text-[10px] text-muted-foreground/60">null</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -182,7 +339,7 @@ export function RightInspector() {
                       {selectedTable.indexes.map((idx) => (
                         <div key={idx.name} className="px-2 py-1.5 rounded hover:bg-surface-hover text-xs">
                           <div className="font-mono text-foreground/80">{idx.name}</div>
-                          <div className="text-muted-foreground">{idx.type} ({idx.columns.join(", ")})</div>
+                          <div className="text-muted-foreground">{idx.isUnique ? 'unique' : 'index'} ({idx.columns.join(", ")})</div>
                         </div>
                       ))}
                     </div>
@@ -197,7 +354,7 @@ export function RightInspector() {
                         <div key={i} className="px-2 py-1.5 rounded hover:bg-surface-hover text-xs">
                           <span className="font-mono text-accent">{fk.column}</span>
                           <span className="text-muted-foreground"> → </span>
-                          <span className="font-mono text-foreground/80">{fk.refTable}.{fk.refColumn}</span>
+                          <span className="font-mono text-foreground/80">{fk.referencedTable}.{fk.referencedColumn}</span>
                         </div>
                       ))}
                     </div>

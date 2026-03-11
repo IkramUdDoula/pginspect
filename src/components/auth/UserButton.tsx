@@ -7,9 +7,25 @@ export function UserButton() {
   const getClerkAppearance = () => ({
     elements: {
       avatarBox: "w-9 h-9",
-      userButtonPopoverCard: "shadow-lg",
-      userButtonPopoverActionButton: "hover:bg-accent",
-      userButtonPopoverActionButtonText: "text-foreground",
+      userButtonPopoverCard: {
+        backgroundColor: theme === "light" ? "hsl(0, 0%, 100%)" : "hsl(0, 0%, 8%)",
+        border: `1px solid ${theme === "light" ? "hsl(0, 0%, 90%)" : "hsl(0, 0%, 20%)"}`,
+        boxShadow: theme === "light" 
+          ? "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+          : "0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2)",
+      },
+      userButtonPopoverActionButton: {
+        color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
+        "&:hover": {
+          backgroundColor: theme === "light" ? "hsl(0, 0%, 96%)" : "hsl(0, 0%, 14%)",
+        },
+      },
+      userButtonPopoverActionButtonText: {
+        color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
+      },
+      userButtonPopoverActionButtonIcon: {
+        color: theme === "light" ? "hsl(0, 0%, 42%)" : "hsl(0, 0%, 65%)",
+      },
       userButtonPopoverFooter: "hidden",
     },
     variables: {

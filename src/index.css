@@ -142,40 +142,70 @@
 
 /* Clerk user button popover hover states - dark theme */
 [data-theme="dark"] .cl-userButtonPopoverActionButton:hover {
-  background-color: hsl(0 0% 20%) !important;
-  color: inherit !important;
+  background-color: hsl(0 0% 14%) !important;
+}
+
+[data-theme="dark"] .cl-userButtonPopoverActionButton:hover .cl-userButtonPopoverActionButtonText,
+[data-theme="dark"] .cl-userButtonPopoverActionButton:hover .cl-userButtonPopoverActionButtonIcon,
+[data-theme="dark"] .cl-userButtonPopoverActionButton:hover svg {
+  color: hsl(0 0% 93%) !important;
+  fill: hsl(0 0% 93%) !important;
 }
 
 /* Clerk user button popover hover states - light theme */
 [data-theme="light"] .cl-userButtonPopoverActionButton:hover {
   background-color: hsl(0 0% 96%) !important;
-  color: inherit !important;
+}
+
+[data-theme="light"] .cl-userButtonPopoverActionButton:hover .cl-userButtonPopoverActionButtonText,
+[data-theme="light"] .cl-userButtonPopoverActionButton:hover .cl-userButtonPopoverActionButtonIcon,
+[data-theme="light"] .cl-userButtonPopoverActionButton:hover svg {
+  color: hsl(0 0% 10%) !important;
+  fill: hsl(0 0% 10%) !important;
 }
 
 /* Clerk menu items hover - dark theme */
 [data-theme="dark"] [role="menuitem"]:hover {
-  background-color: hsl(0 0% 20%) !important;
-  color: inherit !important;
+  background-color: hsl(0 0% 14%) !important;
+}
+
+[data-theme="dark"] [role="menuitem"]:hover *,
+[data-theme="dark"] [role="menuitem"]:hover svg {
+  color: hsl(0 0% 93%) !important;
+  fill: hsl(0 0% 93%) !important;
 }
 
 /* Clerk menu items hover - light theme */
 [data-theme="light"] [role="menuitem"]:hover {
   background-color: hsl(0 0% 96%) !important;
-  color: inherit !important;
+}
+
+[data-theme="light"] [role="menuitem"]:hover *,
+[data-theme="light"] [role="menuitem"]:hover svg {
+  color: hsl(0 0% 10%) !important;
+  fill: hsl(0 0% 10%) !important;
 }
 
 /* Clerk button hover states - dark theme */
-[data-theme="dark"] .cl-button:hover,
-[data-theme="dark"] .cl-userButtonPopoverActionButton:hover {
-  background-color: hsl(0 0% 20%) !important;
-  color: inherit !important;
+[data-theme="dark"] .cl-button:hover {
+  background-color: hsl(0 0% 14%) !important;
+}
+
+[data-theme="dark"] .cl-button:hover *,
+[data-theme="dark"] .cl-button:hover svg {
+  color: hsl(0 0% 93%) !important;
+  fill: hsl(0 0% 93%) !important;
 }
 
 /* Clerk button hover states - light theme */
-[data-theme="light"] .cl-button:hover,
-[data-theme="light"] .cl-userButtonPopoverActionButton:hover {
+[data-theme="light"] .cl-button:hover {
   background-color: hsl(0 0% 96%) !important;
-  color: inherit !important;
+}
+
+[data-theme="light"] .cl-button:hover *,
+[data-theme="light"] .cl-button:hover svg {
+  color: hsl(0 0% 10%) !important;
+  fill: hsl(0 0% 10%) !important;
 }
 
 /* Clerk popover card theme updates - dark theme */

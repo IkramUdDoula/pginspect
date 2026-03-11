@@ -118,12 +118,22 @@ function ClerkProviderWithTheme({ children }: { children: React.ReactNode }) {
       userButtonPopoverActionButton: {
         color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
         backgroundColor: "transparent",
+        "&:hover": {
+          backgroundColor: theme === "light" ? "hsl(0, 0%, 96%)" : "hsl(0, 0%, 14%)",
+          color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
+        },
       },
       userButtonPopoverActionButtonText: {
         color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
+        "&:hover": {
+          color: theme === "light" ? "hsl(0, 0%, 10%)" : "hsl(0, 0%, 93%)",
+        },
       },
       userButtonPopoverActionButtonIcon: {
         color: theme === "light" ? "hsl(0, 0%, 42%)" : "hsl(0, 0%, 65%)",
+        "&:hover": {
+          color: theme === "light" ? "hsl(0, 0%, 42%)" : "hsl(0, 0%, 65%)",
+        },
       },
       userButtonPopoverFooter: {
         borderTop: `1px solid ${theme === "light" ? "hsl(0, 0%, 90%)" : "hsl(0, 0%, 20%)"}`,

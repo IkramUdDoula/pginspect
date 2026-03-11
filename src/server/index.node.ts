@@ -14,6 +14,7 @@ import schema from './routes/schema';
 import queries from './routes/queries';
 import views from './routes/views';
 import test from './routes/test';
+import data from './routes/data';
 
 const app = new Hono();
 
@@ -27,6 +28,7 @@ app.route('/api/connections', connections);
 app.route('/api/schema', schema);
 app.route('/api/query', queries);
 app.route('/api/views', views);
+app.route('/api/data', data);
 app.route('/api/test', test);
 
 // Serve static files in production or proxy to Vite in development
