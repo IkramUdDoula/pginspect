@@ -364,18 +364,18 @@ CREATE TABLE saved_views (
 
 ## Connecting to Databases
 
-### Local Docker Database
+### Native Development Setup
 
-When backend runs in Docker, use `host.docker.internal`:
+When running the backend natively (recommended for development), use `localhost`:
 
 **Connection String:**
 ```
-postgresql://postgres:postgres@host.docker.internal:5432/pgadmin
+postgresql://postgres:postgres@localhost:5432/pgadmin
 ```
 
 **Direct Connection:**
 ```
-Host: host.docker.internal
+Host: localhost
 Port: 5432
 Database: pgadmin
 Username: postgres
@@ -383,11 +383,38 @@ Password: postgres
 SSL Mode: disable
 ```
 
-**Why `host.docker.internal`?**
-- Backend runs inside Docker container
-- `localhost` refers to container itself
-- `host.docker.internal` reaches host machine
-- `database` connects to Docker PostgreSQL service
+### Docker Deployment
+
+When backend runs in Docker, use the Docker service name:
+
+**Connection String:**
+```
+postgresql://postgres:postgres@database:5432/pgadmin
+```
+
+**Direct Connection:**
+```
+Host: database
+Port: 5432
+Database: pgadmin
+Username: postgres
+Password: postgres
+SSL Mode: disable
+```
+
+**Why the difference?**
+- **Native backend**: Connects directly to Docker container via `localhost:5432`
+- **Docker backend**: Uses Docker internal network, service name is `database`
+- **Host machine database**: Use `host.docker.internal` from Docker containers
+
+### Connection Context Summary
+
+| Backend Location | Database Location | Hostname to Use |
+|------------------|-------------------|-----------------|
+| Native (npm run dev) | Docker container | `localhost` |
+| Docker container | Docker container | `database` |
+| Docker container | Host machine | `host.docker.internal` |
+| Native | Host machine | `localhost` |
 
 ### Cloud Databases
 
