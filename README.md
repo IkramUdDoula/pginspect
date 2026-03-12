@@ -135,4 +135,4 @@ For issues and questions:
 
 ---
 
-Built with ❤️ by developers, for developers
+Built with ❤️ by Ikram, for Everyone, with Claude

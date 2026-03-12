@@ -26,7 +26,7 @@ export async function getTables(sql: postgres.Sql, schemaName: string): Promise<
       SELECT 
         t.table_name,
         t.table_schema,
-        COALESCE(s.n_live_tup, 0) as row_count,
+        COALESCE(s.n_live_tup, -1) as row_count_estimate,
         COALESCE(pg_total_relation_size(quote_ident(t.table_schema)||'.'||quote_ident(t.table_name)), 0) as size_bytes
       FROM information_schema.tables t
       LEFT JOIN pg_stat_user_tables s ON s.schemaname = t.table_schema AND s.relname = t.table_name
@@ -40,6 +40,22 @@ export async function getTables(sql: postgres.Sql, schemaName: string): Promise<
     for (const row of result) {
       const tableName = row.table_name as string;
       const schema = row.table_schema as string;
+      let rowCount = Number(row.row_count_estimate);
+
+      // If statistics are not available (0 or -1), get actual count
+      // This happens in fresh Docker databases or when ANALYZE hasn't run
+      if (rowCount <= 0) {
+        try {
+          const countResult = await sql`
+            SELECT COUNT(*) as count 
+            FROM ${sql(schema)}.${sql(tableName)}
+          `;
+          rowCount = Number(countResult[0].count) || 0;
+        } catch (countError) {
+          logger.warn('Failed to get exact count, using estimate', { schema, tableName, error: countError });
+          rowCount = 0;
+        }
+      }
 
       // Get columns, indexes, and foreign keys in parallel
       const [columns, indexes, foreignKeys] = await Promise.all([
@@ -51,7 +67,7 @@ export async function getTables(sql: postgres.Sql, schemaName: string): Promise<
       tables.push({
         name: tableName,
         schema,
-        rowCount: Number(row.row_count) || 0,
+        rowCount,
         sizeBytes: Number(row.size_bytes) || 0,
         columns,
         indexes,
@@ -212,19 +228,37 @@ async function getTableStats(
 ): Promise<{ rowCount: number; sizeBytes: number }> {
   const result = await sql`
     SELECT 
-      COALESCE(s.n_live_tup, 0) as row_count,
+      COALESCE(s.n_live_tup, -1) as row_count_estimate,
       COALESCE(pg_total_relation_size(quote_ident(${schemaName})||'.'||quote_ident(${tableName})), 0) as size_bytes
     FROM pg_stat_user_tables s
     WHERE s.schemaname = ${schemaName}
       AND s.relname = ${tableName}
   `;
 
-  if (result.length === 0) {
-    return { rowCount: 0, sizeBytes: 0 };
+  let rowCount = 0;
+  let sizeBytes = 0;
+
+  if (result.length > 0) {
+    rowCount = Number(result[0].row_count_estimate);
+    sizeBytes = Number(result[0].size_bytes) || 0;
+  }
+
+  // If statistics are not available (0 or -1), get actual count
+  if (rowCount <= 0) {
+    try {
+      const countResult = await sql`
+        SELECT COUNT(*) as count 
+        FROM ${sql(schemaName)}.${sql(tableName)}
+      `;
+      rowCount = Number(countResult[0].count) || 0;
+    } catch (countError) {
+      logger.warn('Failed to get exact count, using estimate', { schemaName, tableName, error: countError });
+      rowCount = 0;
+    }
   }
 
   return {
-    rowCount: Number(result[0].row_count) || 0,
-    sizeBytes: Number(result[0].size_bytes) || 0,
+    rowCount,
+    sizeBytes,
   };
 }
