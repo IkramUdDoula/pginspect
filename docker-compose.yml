@@ -4,9 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
-        - VITE_API_URL=${VITE_API_URL}
-        - VITE_API_TIMEOUT=${VITE_API_TIMEOUT}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_API_URL: "http://localhost:9000"
+        VITE_API_TIMEOUT: "30000"
     ports:
       - "9000:9000"
       - "5000:5000"
