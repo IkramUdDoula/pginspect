@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile optimized for Railway production deployment
+# Multi-stage Dockerfile for production deployment
 FROM oven/bun:1 AS builder
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build frontend (build args will be passed by Railway)
+# Build frontend
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_URL
 ARG VITE_API_TIMEOUT=30000
@@ -43,5 +43,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD bun run -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-# Start command (Railway will run migrations first via railway.toml)
+# Start command
 CMD ["bun", "run", "start"]

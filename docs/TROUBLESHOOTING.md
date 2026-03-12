@@ -15,11 +15,9 @@ Common issues and solutions for pgInspect.
 - ✅ Use `localhost` when backend runs locally
 - ✅ Verify containers are running: `docker ps`
 
-**For Railway Database:**
-- ❌ Don't use `.railway.internal` hostnames
-- ✅ Enable TCP Proxy in Railway dashboard
-- ✅ Use `.proxy.rlwy.net` hostname
-- ✅ Example: `postgres-abc.proxy.rlwy.net:12345`
+**For Cloud Databases:**
+- ✅ Use external/public hostname provided by your cloud provider
+- ✅ Enable SSL/TLS with `sslmode=require`
 
 **For Other Cloud Databases:**
 - ✅ Use external/public hostname

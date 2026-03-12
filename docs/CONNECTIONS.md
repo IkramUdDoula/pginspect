@@ -31,7 +31,7 @@ postgresql://username:password@host:port/database?sslmode=require
 ### Method 3: Cloud Preset
 
 1. Click "New Connection" → "Cloud Preset"
-2. Select your provider (Railway, Supabase, Neon)
+2. Select your provider (Supabase, Neon, Render, etc.)
 3. Fill in the pre-configured form
 4. Click "Save & Connect"
 
@@ -83,35 +83,6 @@ SSL Mode: disable
 ```
 
 ## Cloud Databases
-
-### Railway
-
-1. **Enable TCP Proxy:**
-   - Go to Railway dashboard
-   - Select your PostgreSQL service
-   - Go to Settings → Networking
-   - Click "+ TCP Proxy"
-   - Copy the generated hostname and port
-
-2. **Connection:**
-```
-Host: <something>.proxy.rlwy.net
-Port: <tcp-proxy-port>
-Database: railway
-Username: postgres
-Password: <your-password>
-SSL Mode: require
-```
-
-**Connection String:**
-```
-postgresql://postgres:password@abc.proxy.rlwy.net:12345/railway?sslmode=require
-```
-
-**Important:**
-- ❌ Don't use `.railway.internal` hostnames (only work within Railway)
-- ✅ Use `.proxy.rlwy.net` hostnames (work from anywhere)
-- ✅ Always use `sslmode=require`
 
 ### Supabase
 
@@ -183,7 +154,7 @@ postgresql://username:password@endpoint.neon.tech:5432/database?sslmode=require
 | Docker container | Docker container | `database` |
 | Docker container | Host machine | `host.docker.internal` |
 | Local | Host machine | `localhost` |
-| Any | Cloud (Railway, Supabase, etc.) | Provider hostname |
+| Any | Cloud (Supabase, Neon, etc.) | Provider hostname |
 
 ## Testing Connections
 
@@ -217,7 +188,6 @@ psql "postgresql://user:pass@host:port/db"
 
 **Solutions:**
 - For local Docker: Use `database` (not `localhost`)
-- For Railway: Enable TCP Proxy, use `.proxy.rlwy.net` hostname
 - For cloud databases: Use external/public hostname
 
 ### "Connection timeout"
@@ -263,7 +233,6 @@ docker-compose logs database --tail=50
 ## Additional Resources
 
 - [Supabase Connection Guide](https://supabase.com/docs/guides/database/connecting-to-postgres)
-- [Railway Database Guide](https://docs.railway.app/databases/postgresql)
 - [Neon Connection Guide](https://neon.tech/docs/connect/connect-from-any-app)
 
 For more troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

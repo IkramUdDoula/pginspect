@@ -147,14 +147,6 @@ docker-compose -f docker-compose.yml build
 docker-compose -f docker-compose.yml up -d
 ```
 
-**Railway:**
-```bash
-railway login
-railway init
-railway add --database postgres
-railway up
-```
-
 ### Step 4: Initialize Database
 
 ```bash
@@ -195,19 +187,6 @@ Username: postgres
 Password: postgres
 SSL Mode: disable
 ```
-
-### Railway Database
-
-```
-Host: <something>.proxy.rlwy.net
-Port: <tcp-proxy-port>
-Database: railway
-Username: postgres
-Password: <your-password>
-SSL Mode: require
-```
-
-**Important:** Enable TCP Proxy in Railway dashboard.
 
 ### Supabase Database
 

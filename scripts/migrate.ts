@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Database Migration Script for Railway
+ * Database Migration Script
  * Applies schema.sql to the PostgreSQL database
  */
 

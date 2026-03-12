@@ -445,7 +445,7 @@ Docker Network:
 ### Production
 
 ```
-Cloud Platform (Railway/Render):
+Cloud Platform (Docker/VPS):
 ├── App Service
 │   ├── Frontend (static files)
 │   └── Backend (Bun)

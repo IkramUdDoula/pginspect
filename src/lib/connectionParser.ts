@@ -56,14 +56,6 @@ export const cloudPresets: Record<string, { host: string; port: number; sslMode:
     docsUrl: "https://neon.tech/docs/connect/connect-from-any-app",
     color: "#00E599",
   },
-  Railway: {
-    host: "<host>.railway.internal",
-    port: 5432,
-    sslMode: "require",
-    hint: "Service → Variables → DATABASE_URL",
-    docsUrl: "https://docs.railway.app/databases/postgresql",
-    color: "#A855F7",
-  },
   Render: {
     host: "<host>.render.com",
     port: 5432,
