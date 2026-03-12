@@ -15,6 +15,7 @@
     "server:dev": "bun --watch src/server/index.ts",
     "server": "bun src/server/index.ts",
     "start": "NODE_ENV=production bun src/server/index.ts",
+    "migrate": "bun run scripts/migrate.ts",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

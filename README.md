@@ -90,6 +90,7 @@ docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 |----------|-------------|
 | **[Setup Guide](docs/SETUP.md)** | Complete installation and configuration |
 | **[Deployment Guide](docs/DEPLOYMENT.md)** | Production deployment and environment setup |
+| **[Railway Deployment](docs/RAILWAY_DEPLOYMENT.md)** | Deploy to Railway with auto GitHub integration |
 | **[Authentication](docs/AUTHENTICATION.md)** | Clerk setup and OAuth configuration |
 | **[Database Connections](docs/CONNECTIONS.md)** | Connect to local, Docker, and cloud databases |
 | **[Features Guide](docs/FEATURES.md)** | Visual Query Builder, Saved Views, and more |
