@@ -16,7 +16,7 @@ ENV PORT=9000
 ENV DOCKER_ENV=true
 
 # Copy package files and install dependencies
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install
 
 # Copy source code (this will be overridden by volume mounts in development)
