@@ -29,76 +29,48 @@ pgInspect is a modern, self-hosted PostgreSQL database management tool that prov
 - 💾 **Saved Views** - Save and reuse frequent queries with auto-refresh
 - 🔍 **Schema Inspector** - Explore tables, columns, indexes, and relationships
 - 🔐 **Secure Authentication** - Google & Microsoft OAuth via Clerk
-- � **Encrypted Storage** - AES-256-GCM encryption for database credentials
+- 🔒 **Encrypted Storage** - AES-256-GCM encryption for database credentials
 - 🌐 **Multi-Connection** - Manage multiple databases simultaneously
-- � **Docker Ready** - One-command deployment
+- 🐳 **Docker Ready** - One-command deployment
 - 🎨 **Dark/Light Theme** - Beautiful modern UI
 
 ## 🚀 Quick Start
 
-### Local Development
+### Prerequisites
+
+- Docker Desktop installed and running
+- Git (to clone the repository)
+
+### Deployment (3 Simple Steps)
 
 ```bash
 # 1. Clone the repository
 git clone <YOUR_GIT_URL>
 cd pginspect
 
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment
-cp .env.example .env
-# Edit .env with your Clerk keys (see docs/SETUP.md)
-
-# 4. Start PostgreSQL
-docker run --name pginspect-db \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=pgadmin \
-  -p 5432:5432 \
-  -d postgres:15
-
-# 5. Initialize database
-docker exec -i pginspect-db psql -U postgres -d pgadmin < db/schema.sql
-
-# 6. Start development servers
-npm run dev
-
-# 7. Open http://localhost:8080
-```
-
-### Docker Deployment
-
-```bash
-# 1. Clone and configure
-git clone <YOUR_GIT_URL>
-cd pginspect
+# 2. Configure environment
 cp .env.docker.example .env.docker
-# Edit .env.docker with your configuration
+# Edit .env.docker with your Clerk keys (see docs/SETUP.md)
 
-# 2. Start all services
-docker-compose up -d
-
-# 3. Initialize database
-docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
-
-# 4. Open http://localhost:5000
+# 3. Deploy with one command
+bash scripts/deploy.sh    # Linux/Mac
+# OR
+pwsh scripts/deploy.ps1   # Windows
 ```
+
+That's it! Open http://localhost:5000 and start managing your databases.
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| **[Setup Guide](docs/SETUP.md)** | Complete installation and configuration |
-| **[Deployment Guide](docs/DEPLOYMENT.md)** | Production deployment and environment setup |
-| **[Authentication](docs/AUTHENTICATION.md)** | Clerk setup and OAuth configuration |
-| **[Database Connections](docs/CONNECTIONS.md)** | Connect to local, Docker, and cloud databases |
+| **[Setup Guide](docs/SETUP.md)** | Get Clerk authentication keys |
+| **[Deployment Guide](docs/DEPLOYMENT.md)** | Detailed deployment instructions |
 | **[Features Guide](docs/FEATURES.md)** | Visual Query Builder, Saved Views, and more |
-| **[Docker Guide](docs/DOCKER.md)** | Docker deployment and commands |
+| **[Connections Guide](docs/CONNECTIONS.md)** | Connect to local, Docker, and cloud databases |
 | **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues and solutions |
-| **[API Reference](docs/API.md)** | Backend API endpoints |
-| **[Architecture](docs/ARCHITECTURE.md)** | Technical implementation details |
 
-## � Tech Stack
+## 🛠 Tech Stack
 
 **Frontend:** React 18 • TypeScript • Vite • TailwindCSS • shadcn/ui  
 **Backend:** Bun • Hono • Node.js  
@@ -116,6 +88,19 @@ docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 - JWT token verification for all API requests
 - Connection pooling with timeouts and limits
 
+## 📊 Default Credentials
+
+After deployment, connect to the built-in database:
+
+```
+Host:     localhost
+Port:     5432
+Database: pgadmin
+Username: postgres
+Password: postgres
+SSL Mode: disable
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -126,12 +111,6 @@ docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
 ## 📄 License
 
 MIT
-
-## � Support
-
-For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/your-repo/issues)
-- Documentation: See [docs/](docs/) folder
 
 ---
 

@@ -4,8 +4,7 @@ Complete reference for pgInspect backend API endpoints.
 
 ## Base URL
 
-- Development: `http://localhost:3000/api`
-- Docker: `http://localhost:9000/api`
+- Docker Deployment: `http://localhost:9000/api`
 - Production: `https://your-domain.com/api`
 
 ## Authentication
@@ -27,7 +26,7 @@ Check server health status.
 
 **Request:**
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:9000/api/health
 ```
 
 **Response:**
@@ -50,7 +49,7 @@ Test database connection without saving.
 
 **Request:**
 ```bash
-curl -X POST http://localhost:3000/api/connections/test \
+curl -X POST http://localhost:9000/api/connections/test \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -467,8 +466,8 @@ Currently no rate limiting is implemented. For production, consider adding rate 
 ## CORS
 
 CORS is configured via `CORS_ORIGIN` environment variable. Default allows:
-- `http://localhost:8080` (development frontend)
-- `http://localhost:3000` (development backend)
+- `http://localhost:5000` (frontend)
+- `http://localhost:9000` (backend)
 
 For production, update to your domain:
 ```env
@@ -487,11 +486,11 @@ CORS_ORIGIN=https://your-domain.com
 
 ```bash
 # Test health endpoint
-curl http://localhost:3000/api/health
+curl http://localhost:9000/api/health
 
 # Test with authentication
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/connections
+  http://localhost:9000/api/connections
 ```
 
 For more details, see [ARCHITECTURE.md](ARCHITECTURE.md).
