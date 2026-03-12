@@ -28,7 +28,7 @@ SSL Mode: disable
 
 ### How to Connect
 
-1. Open pgInspect at http://localhost:5000
+1. Open pgInspect at http://localhost:9000
 2. Sign in with your account
 3. Click "New Connection"
 4. Fill in the details above

@@ -39,7 +39,6 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 In Clerk Dashboard, go to "Domains":
 
 **For Docker Deployment:**
-- Add `http://localhost:5000`
 - Add `http://localhost:9000`
 
 **For Production:**
@@ -48,7 +47,7 @@ In Clerk Dashboard, go to "Domains":
 ### Step 6: Test Authentication
 
 1. Deploy the application: `bash scripts/deploy.sh`
-2. Open http://localhost:5000
+2. Open http://localhost:9000
 3. Click "Sign In"
 4. Try signing in with Google or Microsoft
 

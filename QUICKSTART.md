@@ -52,8 +52,8 @@ That's it! Open http://localhost:5000
 
 ## What You Get
 
-- **Frontend:** http://localhost:5000
-- **Backend API:** http://localhost:9000
+- **Application:** http://localhost:9000
+- **API:** http://localhost:9000/api
 - **PostgreSQL Database:** localhost:5432
 
 ## First Connection

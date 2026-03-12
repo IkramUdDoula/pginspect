@@ -152,7 +152,7 @@ Authentication failed
    ```
 
 4. **Verify Clerk Dashboard settings:**
-   - Allowed origins: `http://localhost:5000`
+   - Allowed origins: `http://localhost:9000`
    - Redirect URLs configured correctly
 
 ### Redirect Loop After Sign In
@@ -175,7 +175,7 @@ Authentication failed
 
 3. **Check CORS settings:**
    ```env
-   CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+   CORS_ORIGIN=http://localhost:9000
    ```
 
 ### OAuth Providers Not Working
@@ -193,7 +193,7 @@ Authentication failed
 
 2. **Check allowed domains:**
    - Clerk Dashboard → Domains
-   - Add `http://localhost:5000`
+   - Add `http://localhost:9000`
 
 ## Database Issues
 
@@ -302,8 +302,8 @@ docker exec -it pginspect-app-1 psql "postgresql://user:pass@host:port/database"
    ```
 
 2. **Verify port:**
-   - Should be http://localhost:5000
-   - Check `.env.docker` for `VITE_PORT`
+   - Should be http://localhost:9000
+   - Check `.env.docker` for `PORT`
 
 3. **Restart containers:**
    ```bash
@@ -346,7 +346,7 @@ ERR_CONNECTION_REFUSED
 
 4. **Check CORS settings:**
    ```env
-   CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+   CORS_ORIGIN=http://localhost:9000
    ```
 
 ### Query Execution Fails

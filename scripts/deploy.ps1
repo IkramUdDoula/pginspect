@@ -66,9 +66,9 @@ Write-Host "Deployment Complete!" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Application URLs:" -ForegroundColor Cyan
-Write-Host "   Frontend: http://localhost:5000"
-Write-Host "   Backend:  http://localhost:9000"
-Write-Host "   Database: localhost:5432"
+Write-Host "   Application: http://localhost:9000"
+Write-Host "   API:         http://localhost:9000/api"
+Write-Host "   Database:    localhost:5432"
 Write-Host ""
 Write-Host "Useful Commands:" -ForegroundColor Cyan
 Write-Host "   View logs:        docker-compose logs -f"

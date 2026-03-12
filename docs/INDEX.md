@@ -50,8 +50,8 @@ pwsh scripts/deploy.ps1   # Windows
 
 ### Access Points
 
-- **Frontend:** http://localhost:5000
-- **Backend API:** http://localhost:9000
+- **Application:** http://localhost:9000
+- **API:** http://localhost:9000/api
 - **Database:** localhost:5432
 
 ### Built-in Database

@@ -37,7 +37,7 @@ COPY --from=builder /app/src/lib ./src/lib
 ENV NODE_ENV=production
 ENV PORT=9000
 
-EXPOSE 9000 5000
+EXPOSE 9000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

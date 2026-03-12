@@ -266,7 +266,7 @@ LOG_LEVEL=debug
 CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 ENCRYPTION_KEY=...
-CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+CORS_ORIGIN=http://localhost:9000
 ```
 
 ### Frontend Variables
@@ -293,9 +293,9 @@ DATABASE_URL=postgresql://postgres:postgres@database:5432/pgadmin
 Access services from host machine:
 
 ```
-Frontend:  http://localhost:5000
-Backend:   http://localhost:9000
-Database:  localhost:5432
+Application: http://localhost:9000
+API:         http://localhost:9000/api
+Database:    localhost:5432
 ```
 
 ### Container to Host

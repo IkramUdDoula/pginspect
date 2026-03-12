@@ -57,7 +57,7 @@ After creating the application:
 
 3. Go to **Domains** in the left sidebar
 4. Add allowed origin:
-   - `http://localhost:5000`
+   - `http://localhost:9000`
 
 ### 3. Clone Repository
 
@@ -106,7 +106,7 @@ The script will:
 ### 6. Access Application
 
 Open your browser and go to:
-- **http://localhost:5000**
+- **http://localhost:9000**
 
 You should see the pgInspect landing page with "Sign In" button.
 
@@ -166,7 +166,7 @@ NODE_ENV=development         # Environment mode
 LOG_LEVEL=debug             # Logging level
 
 # Security
-CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+CORS_ORIGIN=http://localhost:9000
 QUERY_TIMEOUT=30000         # Query timeout in ms
 MAX_RESULT_ROWS=1000        # Max rows returned
 
@@ -247,7 +247,7 @@ Look for:
 
 ### 3. Test Frontend
 
-Open http://localhost:5000
+Open http://localhost:9000
 - ✅ Page loads
 - ✅ "Sign In" button visible
 - ✅ No console errors

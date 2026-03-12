@@ -59,8 +59,8 @@ The script will:
 ### Step 4: Access Application
 
 Open your browser:
-- **Frontend:** http://localhost:5000
-- **Backend API:** http://localhost:9000
+- **Application:** http://localhost:9000
+- **API:** http://localhost:9000/api
 - **Database:** localhost:5432
 
 ## What Gets Deployed
@@ -108,7 +108,7 @@ NODE_ENV=development
 LOG_LEVEL=debug
 
 # Security
-CORS_ORIGIN=http://localhost:5000,http://localhost:9000
+CORS_ORIGIN=http://localhost:9000
 QUERY_TIMEOUT=30000
 MAX_RESULT_ROWS=1000
 

@@ -58,7 +58,7 @@ bash scripts/deploy.sh    # Linux/Mac
 pwsh scripts/deploy.ps1   # Windows
 ```
 
-That's it! Open http://localhost:5000 and start managing your databases.
+That's it! Open http://localhost:9000 and start managing your databases.
 
 ## 📚 Documentation
 

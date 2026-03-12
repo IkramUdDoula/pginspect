@@ -466,8 +466,7 @@ Currently no rate limiting is implemented. For production, consider adding rate 
 ## CORS
 
 CORS is configured via `CORS_ORIGIN` environment variable. Default allows:
-- `http://localhost:5000` (frontend)
-- `http://localhost:9000` (backend)
+- `http://localhost:9000` (application)
 
 For production, update to your domain:
 ```env
