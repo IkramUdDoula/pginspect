@@ -34,40 +34,53 @@ pgInspect is a modern, self-hosted PostgreSQL database management tool that prov
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 18+ or Bun installed
-- PostgreSQL 16+ installed locally
-- Git (to clone the repository)
-
-### Setup (3 Simple Steps)
+### Option 1: Docker (Recommended)
 
 ```bash
 # 1. Clone the repository
-git clone <YOUR_GIT_URL>
+git clone https://github.com/ikramuddoula/pginspect
+cd pginspect
+
+# 2. Setup environment
+cp .env.example .env
+# Edit .env with your Clerk keys
+
+# 3. Start with Docker
+docker-compose up -d
+
+# Or use the setup script
+bash scripts/docker-setup.sh  # Linux/Mac
+# OR
+.\scripts\docker-setup.ps1    # Windows
+```
+
+Access at http://localhost:3000
+
+### Option 2: Local Development
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 
 # 2. Install dependencies
 npm install
-# OR
-bun install
 
 # 3. Configure environment
 cp .env.example .env
-# Edit .env with your Clerk keys and database URL (see docs/SETUP.md)
+# Edit .env with your Clerk keys and database URL
 
 # 4. Start the application
 npm run dev
-# OR
-bun run dev
 ```
 
-That's it! Open http://localhost:9000 and start managing your databases.
+Access at http://localhost:8080
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
+| **[Docker Guide](DOCKER.md)** | Docker deployment (production & development) |
 | **[Setup Guide](docs/SETUP.md)** | Get Clerk authentication keys |
 | **[Deployment Guide](docs/DEPLOYMENT.md)** | Detailed deployment instructions |
 | **[Features Guide](docs/FEATURES.md)** | Visual Query Builder, Saved Views, and more |

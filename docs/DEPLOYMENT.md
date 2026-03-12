@@ -14,7 +14,7 @@ Complete guide for deploying pgInspect locally and to production.
 ### Step 1: Clone Repository
 
 ```bash
-git clone <YOUR_GIT_URL>
+git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 ```
 

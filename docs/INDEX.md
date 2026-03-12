@@ -35,7 +35,7 @@ New to pgInspect? Start here:
 
 ```bash
 # 1. Clone repository
-git clone <YOUR_GIT_URL>
+git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 
 # 2. Install dependencies

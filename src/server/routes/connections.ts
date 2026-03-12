@@ -2,7 +2,7 @@
 
 import { Hono } from 'hono';
 import { testConnection, createConnection, closeConnection } from '../services/db';
-import { parseConnectionString } from '../../lib/connectionParser';
+import { parseConnectionString } from '../../lib/connectionParser.ts';
 import { validateConnectionRequest } from '../middleware/validator';
 import { authMiddleware, getAuth } from '../middleware/auth';
 import { saveUserConnection, getUserConnections, deleteUserConnection } from '../services/userConnections';

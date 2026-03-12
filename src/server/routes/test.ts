@@ -2,7 +2,7 @@
 
 import { Hono } from 'hono';
 import { testConnection } from '../services/db';
-import { parseConnectionString } from '../../lib/connectionParser';
+import { parseConnectionString } from '../../lib/connectionParser.ts';
 import { logger } from '../utils/logger';
 
 const test = new Hono();
