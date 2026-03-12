@@ -2,28 +2,36 @@
 
 Common issues and solutions for pgInspect.
 
-## Deployment Issues
+## Setup Issues
 
-### Docker Not Running
+### PostgreSQL Not Running
 
 **Symptoms:**
 ```
-❌ Error: Docker is not running
-Cannot connect to the Docker daemon
+Connection refused
+ECONNREFUSED localhost:5432
 ```
 
 **Solutions:**
-1. Start Docker Desktop
-2. Wait for Docker to fully initialize (check system tray icon)
-3. Verify: `docker --version`
-4. Try again: `bash scripts/deploy.sh`
+1. Start PostgreSQL service:
+   ```bash
+   # Linux
+   sudo systemctl start postgresql
+   
+   # macOS
+   brew services start postgresql
+   
+   # Windows - Start from Services or pgAdmin
+   ```
+2. Verify: `psql --version`
+3. Check status: `pg_isready`
 
 ### Port Already in Use
 
 **Symptoms:**
 ```
 Error: port is already allocated
-Bind for 0.0.0.0:5000 failed: port is already allocated
+Address already in use
 ```
 
 **Solutions:**
@@ -31,94 +39,92 @@ Bind for 0.0.0.0:5000 failed: port is already allocated
 **Option 1:** Stop the service using the port
 ```bash
 # Find what's using the port
-lsof -i :5000  # Mac/Linux
-netstat -ano | findstr :5000  # Windows
+lsof -i :9000  # Mac/Linux
+netstat -ano | findstr :9000  # Windows
 
 # Stop the process
 kill -9 <PID>  # Mac/Linux
 taskkill /PID <PID> /F  # Windows
 ```
 
-**Option 2:** Change ports in `.env.docker`
+**Option 2:** Change port in `.env`
 ```env
-PORT=9001              # Backend
-VITE_PORT=5001         # Frontend
+PORT=9001
 VITE_API_URL=http://localhost:9001
-CORS_ORIGIN=http://localhost:5001,http://localhost:9001
+CORS_ORIGIN=http://localhost:9001
 ```
 
-Then redeploy:
+Then restart:
 ```bash
-docker-compose down
-bash scripts/deploy.sh
+npm run dev
 ```
 
 ### Environment File Missing
 
 **Symptoms:**
 ```
-❌ Error: .env.docker file not found
+Error: .env file not found
+Missing environment variables
 ```
 
 **Solution:**
 ```bash
-cp .env.docker.example .env.docker
-# Edit .env.docker with your Clerk keys
-bash scripts/deploy.sh
+cp .env.example .env
+# Edit .env with your Clerk keys and database URL
+npm run dev
 ```
 
-### Containers Failed to Start
+### Dependencies Installation Failed
 
 **Symptoms:**
 ```
-❌ Error: Containers failed to start
+npm ERR! code ERESOLVE
+Module not found
 ```
 
 **Solutions:**
 
-1. **Check logs:**
+1. **Clean install:**
    ```bash
-   docker-compose logs
+   rm -rf node_modules package-lock.json
+   npm install
    ```
 
-2. **Common causes:**
-   - Missing Clerk keys in `.env.docker`
-   - Invalid Clerk keys
-   - Port conflicts
-   - Docker resource limits
-
-3. **Clean restart:**
+2. **Use Bun instead:**
    ```bash
-   docker-compose down -v
-   docker system prune -f
-   bash scripts/deploy.sh
+   rm -rf node_modules bun.lockb
+   bun install
+   ```
+
+3. **Check Node.js version:**
+   ```bash
+   node --version  # Should be 18+
    ```
 
 ### Build Failures
 
 **Symptoms:**
 ```
-Error: failed to solve
 Error: build failed
+TypeScript errors
 ```
 
 **Solutions:**
 
 1. **Clean build:**
    ```bash
-   docker-compose down
-   docker-compose build --no-cache
-   docker-compose up -d
+   rm -rf dist
+   npm run build
    ```
 
-2. **Check Docker resources:**
-   - Docker Desktop → Settings → Resources
-   - Increase memory to at least 4GB
-   - Increase disk space
-
-3. **Clear Docker cache:**
+2. **Check TypeScript errors:**
    ```bash
-   docker system prune -a
+   npm run lint
+   ```
+
+3. **Update dependencies:**
+   ```bash
+   npm update
    ```
 
 ## Authentication Issues
@@ -134,7 +140,7 @@ Authentication failed
 
 **Solutions:**
 
-1. **Verify Clerk keys in `.env.docker`:**
+1. **Verify Clerk keys in `.env`:**
    ```env
    CLERK_PUBLISHABLE_KEY=pk_test_...
    CLERK_SECRET_KEY=sk_test_...
@@ -146,9 +152,10 @@ Authentication failed
    - Same publishable key for both variables
    - Keys from correct Clerk application
 
-3. **Restart containers:**
+3. **Restart server:**
    ```bash
-   docker-compose restart
+   # Stop with Ctrl+C
+   npm run dev
    ```
 
 4. **Verify Clerk Dashboard settings:**
@@ -197,7 +204,7 @@ Authentication failed
 
 ## Database Issues
 
-### Can't Connect to Built-in Database
+### Can't Connect to Database
 
 **Symptoms:**
 ```
@@ -207,29 +214,31 @@ ECONNREFUSED localhost:5432
 
 **Solutions:**
 
-1. **Check database container:**
+1. **Check PostgreSQL is running:**
    ```bash
-   docker-compose ps
-   ```
-   Should show `pginspect-database-1` as "Up"
-
-2. **Check database logs:**
-   ```bash
-   docker-compose logs database
+   pg_isready
+   # OR
+   psql -U postgres -c "SELECT 1"
    ```
 
-3. **Wait for initialization:**
-   - Database takes 10-15 seconds to start
-   - Wait and try again
-
-4. **Restart database:**
+2. **Start PostgreSQL:**
    ```bash
-   docker-compose restart database
+   # Linux
+   sudo systemctl start postgresql
+   
+   # macOS
+   brew services start postgresql
    ```
 
-5. **Use correct host:**
-   - From host machine: `localhost`
-   - From Docker container: `database`
+3. **Check DATABASE_URL in `.env`:**
+   ```env
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/pgadmin
+   ```
+
+4. **Verify database exists:**
+   ```bash
+   psql -U postgres -l | grep pgadmin
+   ```
 
 ### Database Schema Not Initialized
 
@@ -239,22 +248,20 @@ ECONNREFUSED localhost:5432
 
 **Solutions:**
 
-The schema is automatically applied on first startup. If it failed:
-
 1. **Check if schema was applied:**
    ```bash
-   docker exec -it pginspect-database-1 psql -U postgres -d pgadmin -c "\dt"
+   psql -U postgres -d pgadmin -c "\dt"
    ```
 
-2. **Manually apply schema:**
+2. **Apply schema:**
    ```bash
-   docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
+   psql -U postgres -d pgadmin -f db/schema.sql
    ```
 
-3. **Fresh start:**
+3. **Create database if missing:**
    ```bash
-   docker-compose down -v  # Removes volumes
-   bash scripts/deploy.sh
+   createdb pgadmin
+   psql -U postgres -d pgadmin -f db/schema.sql
    ```
 
 ### Can't Connect to External Database
@@ -273,16 +280,12 @@ The schema is automatically applied on first startup. If it failed:
 - ✅ Verify credentials are correct
 
 **For Local Databases:**
-- Use `host.docker.internal` instead of `localhost` when connecting from Docker
-- Ensure database is listening on 0.0.0.0, not just 127.0.0.1
+- Use `localhost` for local connections
+- Ensure database is listening on correct port
 
 **Test connection:**
 ```bash
-# From host machine
 psql "postgresql://user:pass@host:port/database"
-
-# From Docker container
-docker exec -it pginspect-app-1 psql "postgresql://user:pass@host:port/database"
 ```
 
 ## Application Issues
@@ -296,26 +299,22 @@ docker exec -it pginspect-app-1 psql "postgresql://user:pass@host:port/database"
 
 **Solutions:**
 
-1. **Check frontend container:**
+1. **Check server is running:**
    ```bash
-   docker-compose logs app
+   # Should see "Server running on port 9000"
    ```
 
 2. **Verify port:**
    - Should be http://localhost:9000
-   - Check `.env.docker` for `PORT`
+   - Check `.env` for `PORT`
 
-3. **Restart containers:**
+3. **Rebuild:**
    ```bash
-   docker-compose restart
+   npm run build
+   npm start
    ```
 
-4. **Rebuild:**
-   ```bash
-   docker-compose down
-   docker-compose build --no-cache
-   docker-compose up -d
-   ```
+4. **Check browser console for errors**
 
 ### Backend API Not Responding
 
@@ -334,12 +333,9 @@ ERR_CONNECTION_REFUSED
    ```
    Should return: `{"status":"ok"}`
 
-2. **Check backend logs:**
-   ```bash
-   docker-compose logs app
-   ```
+2. **Check server logs in terminal**
 
-3. **Verify API URL in `.env.docker`:**
+3. **Verify API URL in `.env`:**
    ```env
    VITE_API_URL=http://localhost:9000
    ```
@@ -387,7 +383,7 @@ ERR_CONNECTION_REFUSED
 
 1. **Check database tables:**
    ```bash
-   docker exec -it pginspect-database-1 psql -U postgres -d pgadmin -c "\dt"
+   psql -U postgres -d pgadmin -c "\dt"
    ```
    Should show `saved_views` table
 
@@ -395,10 +391,7 @@ ERR_CONNECTION_REFUSED
    - Sign out and sign in again
    - Check browser console for errors
 
-3. **Check backend logs:**
-   ```bash
-   docker-compose logs app | grep -i view
-   ```
+3. **Check server logs in terminal**
 
 ## Performance Issues
 
@@ -427,99 +420,95 @@ ERR_CONNECTION_REFUSED
 
 **Solutions:**
 
-1. **Increase Docker memory:**
-   - Docker Desktop → Settings → Resources
-   - Increase memory limit
-
-2. **Reduce connection pool:**
+1. **Reduce connection pool:**
    ```env
    DB_POOL_MAX=3
    ```
 
-3. **Restart containers:**
+2. **Restart server:**
    ```bash
-   docker-compose restart
+   # Stop with Ctrl+C
+   npm run dev
    ```
+
+3. **Close unused connections in the app**
 
 ## Useful Commands
 
-### View Logs
+### Development
 
 ```bash
-# All logs
-docker-compose logs -f
+# Start development server
+npm run dev
 
-# Specific service
-docker-compose logs -f app
-docker-compose logs -f database
+# Build for production
+npm run build
 
-# Last 100 lines
-docker-compose logs --tail=100
+# Start production server
+npm start
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
 ```
 
-### Restart Services
+### Database
 
 ```bash
-# Restart all
-docker-compose restart
+# Check PostgreSQL status
+pg_isready
 
-# Restart specific service
-docker-compose restart app
-docker-compose restart database
-```
+# Start PostgreSQL
+sudo systemctl start postgresql  # Linux
+brew services start postgresql   # macOS
 
-### Clean Restart
+# Create database
+createdb pgadmin
 
-```bash
-# Stop and remove containers
-docker-compose down
+# Apply schema
+psql -U postgres -d pgadmin -f db/schema.sql
 
-# Remove volumes (deletes data!)
-docker-compose down -v
-
-# Rebuild and start
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### Access Database
-
-```bash
-# PostgreSQL CLI
-docker exec -it pginspect-database-1 psql -U postgres -d pgadmin
+# Access database
+psql -U postgres -d pgadmin
 
 # List tables
-docker exec -it pginspect-database-1 psql -U postgres -d pgadmin -c "\dt"
+psql -U postgres -d pgadmin -c "\dt"
 
 # Query users
-docker exec -it pginspect-database-1 psql -U postgres -d pgadmin -c "SELECT * FROM users;"
+psql -U postgres -d pgadmin -c "SELECT * FROM users;"
 ```
 
-### Check Container Status
+### Debugging
 
 ```bash
-# List containers
-docker-compose ps
+# Check Node.js version
+node --version
 
-# Container details
-docker inspect pginspect-app-1
+# Check npm version
+npm --version
 
-# Resource usage
-docker stats
+# Check PostgreSQL version
+psql --version
+
+# Test database connection
+psql -U postgres -d pgadmin -c "SELECT 1"
+
+# Test API endpoint
+curl http://localhost:9000/api/health
 ```
 
 ## Getting Help
 
 If you're still experiencing issues:
 
-1. **Check logs:**
-   ```bash
-   docker-compose logs > logs.txt
-   ```
+1. **Check server logs in terminal**
 
 2. **Gather information:**
    - Operating system
-   - Docker version: `docker --version`
+   - Node.js version: `node --version`
+   - PostgreSQL version: `psql --version`
    - Error messages
    - Steps to reproduce
 
@@ -534,5 +523,4 @@ If you're still experiencing issues:
 - [Setup Guide](SETUP.md) - Initial setup instructions
 - [Deployment Guide](DEPLOYMENT.md) - Deployment details
 - [Connections Guide](CONNECTIONS.md) - Database connection examples
-- [Docker Documentation](https://docs.docker.com/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)

@@ -46,10 +46,8 @@ export async function getTables(sql: postgres.Sql, schemaName: string): Promise<
       // This happens in fresh Docker databases or when ANALYZE hasn't run
       if (rowCount <= 0) {
         try {
-          const countResult = await sql`
-            SELECT COUNT(*) as count 
-            FROM ${sql(schema)}.${sql(tableName)}
-          `;
+          // Use unsafe query for dynamic table names
+          const countResult = await sql.unsafe(`SELECT COUNT(*) as count FROM "${schema}"."${tableName}"`);
           rowCount = Number(countResult[0].count) || 0;
         } catch (countError) {
           logger.warn('Failed to get exact count, using estimate', { schema, tableName, error: countError });
@@ -246,10 +244,8 @@ async function getTableStats(
   // If statistics are not available (0 or -1), get actual count
   if (rowCount <= 0) {
     try {
-      const countResult = await sql`
-        SELECT COUNT(*) as count 
-        FROM ${sql(schemaName)}.${sql(tableName)}
-      `;
+      // Use unsafe query for dynamic table names
+      const countResult = await sql.unsafe(`SELECT COUNT(*) as count FROM "${schemaName}"."${tableName}"`);
       rowCount = Number(countResult[0].count) || 0;
     } catch (countError) {
       logger.warn('Failed to get exact count, using estimate', { schemaName, tableName, error: countError });

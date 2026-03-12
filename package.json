@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "NODE_ENV=production bun src/server/index.ts",
+    "dev": "concurrently \"vite\" \"tsx src/server/index.node.ts\"",
+    "start": "NODE_ENV=production tsx src/server/index.node.ts",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -15,8 +16,7 @@
   "overrides": {
     "dompurify": "^3.3.2",
     "lodash": "^4.17.22",
-    "hono": "^4.12.5",
-    "@hono/node-server": "^1.19.10"
+    "hono": "^4.12.5"
   },
   "dependencies": {
     "@clerk/backend": "^3.0.1",
@@ -60,6 +60,7 @@
     "cmdk": "^1.1.1",
     "cookie": "^1.1.1",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.3.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.35.1",
     "hono": "^4.12.5",

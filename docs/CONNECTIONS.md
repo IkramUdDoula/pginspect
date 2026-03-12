@@ -4,15 +4,14 @@ Learn how to connect pgInspect to various PostgreSQL databases.
 
 ## Quick Start
 
-After deploying pgInspect, you can connect to:
-- Built-in PostgreSQL database (included with Docker deployment)
-- Local databases on your machine
+After setting up pgInspect, you can connect to:
+- Local PostgreSQL databases on your machine
 - Cloud databases (Supabase, Neon, AWS RDS, etc.)
-- Other Docker containers
+- Remote PostgreSQL servers
 
-## Built-in Database
+## Local Database
 
-The Docker deployment includes a PostgreSQL database ready to use.
+Connect to your local PostgreSQL database.
 
 ### Connection Details
 
@@ -22,7 +21,7 @@ Host:     localhost
 Port:     5432
 Database: pgadmin
 Username: postgres
-Password: postgres
+Password: your_password
 SSL Mode: disable
 ```
 
@@ -194,12 +193,12 @@ Most PostgreSQL cloud providers work with pgInspect. You need:
 
 ## Local Databases
 
-### Connecting to Host Machine Database
+### Connecting to Local PostgreSQL
 
-If you have PostgreSQL running on your host machine:
+If you have PostgreSQL running on your local machine:
 
 ```
-Host: host.docker.internal
+Host: localhost
 Port: 5432
 Database: your_database
 Username: your_username
@@ -207,28 +206,20 @@ Password: your_password
 SSL Mode: disable
 ```
 
-**Note:** Use `host.docker.internal` instead of `localhost` when connecting from Docker containers.
+### Connecting to Remote Server
 
-### Connecting to Another Docker Container
+If your database is on a remote server:
 
-If your database is in another Docker container:
+```
+Host: your-server.example.com
+Port: 5432
+Database: your_database
+Username: your_username
+Password: your_password
+SSL Mode: require
+```
 
-1. **Ensure containers are on the same network:**
-   ```bash
-   docker network create my-network
-   docker network connect my-network pginspect-app-1
-   docker network connect my-network your-database-container
-   ```
-
-2. **Connect using container name:**
-   ```
-   Host: your-database-container
-   Port: 5432
-   Database: your_database
-   Username: your_username
-   Password: your_password
-   SSL Mode: disable
-   ```
+**Note:** Ensure the remote server allows connections from your IP address.
 
 ## Connection Security
 
@@ -274,11 +265,8 @@ pgInspect tests the connection before saving:
 Test connection from command line:
 
 ```bash
-# Test from host machine
+# Test connection
 psql "postgresql://user:pass@host:port/database"
-
-# Test from Docker container
-docker exec -it pginspect-app-1 psql "postgresql://user:pass@host:port/database"
 ```
 
 ## Troubleshooting
@@ -349,7 +337,7 @@ Could not resolve hostname
 - Verify hostname is correct
 - Check DNS resolution
 - Try using IP address instead
-- For `localhost`, use `host.docker.internal` from Docker
+- Ensure you're using `localhost` for local databases
 
 ## Connection Limits
 
@@ -368,7 +356,7 @@ DB_POOL_MIN=2
 DB_POOL_MAX=5
 ```
 
-Adjust in `.env.docker` if needed.
+Adjust in `.env` if needed.
 
 ### Query Timeout
 
@@ -439,4 +427,4 @@ SSL Mode: require
 
 - [Setup Guide](SETUP.md) - Initial setup
 - [Troubleshooting](TROUBLESHOOTING.md) - Common issues
-- [Docker Guide](DOCKER.md) - Docker commands
+- [Deployment Guide](DEPLOYMENT.md) - Deployment instructions

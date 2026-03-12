@@ -6,23 +6,22 @@ Complete documentation for pgInspect - Modern PostgreSQL Database Management.
 
 New to pgInspect? Start here:
 
-1. **[Quick Start](../QUICKSTART.md)** - Get running in 3 steps
+1. **[Quick Start](../QUICKSTART.md)** - Get running in 4 steps
 2. **[Setup Guide](SETUP.md)** - Detailed setup instructions
-3. **[Deployment Guide](DEPLOYMENT.md)** - Deploy with Docker
+3. **[Deployment Guide](DEPLOYMENT.md)** - Local and production deployment
 
 ## Core Documentation
 
 ### Setup & Deployment
 
 - **[Setup Guide](SETUP.md)** - Complete installation and configuration
-- **[Deployment Guide](DEPLOYMENT.md)** - Docker deployment instructions
-- **[Docker Guide](DOCKER.md)** - Docker commands and reference
+- **[Deployment Guide](DEPLOYMENT.md)** - Local and production deployment
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Features & Usage
 
 - **[Features Guide](FEATURES.md)** - Visual Query Builder, Saved Views, and more
-- **[Connections Guide](CONNECTIONS.md)** - Connect to databases (local, cloud, Docker)
+- **[Connections Guide](CONNECTIONS.md)** - Connect to databases (local, cloud, remote)
 - **[Authentication](AUTHENTICATION.md)** - Clerk setup and OAuth configuration
 - **[API Reference](API.md)** - Backend API endpoints
 
@@ -39,13 +38,19 @@ New to pgInspect? Start here:
 git clone <YOUR_GIT_URL>
 cd pginspect
 
-# 2. Configure environment
-cp .env.docker.example .env.docker
-# Edit .env.docker with your Clerk keys
+# 2. Install dependencies
+npm install
 
-# 3. Deploy
-bash scripts/deploy.sh    # Linux/Mac
-pwsh scripts/deploy.ps1   # Windows
+# 3. Setup database
+createdb pgadmin
+psql -d pgadmin -f db/schema.sql
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env with your Clerk keys and database URL
+
+# 5. Start application
+npm run dev
 ```
 
 ### Access Points
@@ -54,14 +59,14 @@ pwsh scripts/deploy.ps1   # Windows
 - **API:** http://localhost:9000/api
 - **Database:** localhost:5432
 
-### Built-in Database
+### Local Database
 
 ```
 Host:     localhost
 Port:     5432
 Database: pgadmin
 Username: postgres
-Password: postgres
+Password: your_password
 SSL Mode: disable
 ```
 
@@ -79,32 +84,32 @@ SSL Mode: disable
 1. Review [Architecture](ARCHITECTURE.md)
 2. Check [API Reference](API.md)
 3. Understand [Authentication](AUTHENTICATION.md)
-4. Use [Docker Guide](DOCKER.md)
+4. Read [Deployment Guide](DEPLOYMENT.md)
 
 ### For Troubleshooting
 
 1. Check [Troubleshooting Guide](TROUBLESHOOTING.md)
-2. Review [Docker Guide](DOCKER.md) for container issues
-3. See [Connections Guide](CONNECTIONS.md) for database issues
-4. Check [Setup Guide](SETUP.md) for configuration issues
+2. See [Connections Guide](CONNECTIONS.md) for database issues
+3. Check [Setup Guide](SETUP.md) for configuration issues
 
 ## Common Tasks
 
-### Deploy Application
+### Start Development Server
 
 ```bash
-bash scripts/deploy.sh
+npm run dev
 ```
 
 See: [Deployment Guide](DEPLOYMENT.md)
 
-### View Logs
+### Build for Production
 
 ```bash
-docker-compose logs -f
+npm run build
+npm start
 ```
 
-See: [Docker Guide](DOCKER.md)
+See: [Deployment Guide](DEPLOYMENT.md)
 
 ### Connect to Database
 
@@ -118,8 +123,8 @@ See: [Connections Guide](CONNECTIONS.md)
 ### Troubleshoot Issues
 
 1. Check [Troubleshooting Guide](TROUBLESHOOTING.md)
-2. View logs: `docker-compose logs -f`
-3. Restart: `docker-compose restart`
+2. View server logs in terminal
+3. Restart: Stop with Ctrl+C, then `npm run dev`
 
 See: [Troubleshooting](TROUBLESHOOTING.md)
 
@@ -187,7 +192,6 @@ docs/
 ├── INDEX.md              # This file
 ├── SETUP.md              # Setup instructions
 ├── DEPLOYMENT.md         # Deployment guide
-├── DOCKER.md             # Docker reference
 ├── FEATURES.md           # Features guide
 ├── CONNECTIONS.md        # Database connections
 ├── AUTHENTICATION.md     # Auth setup
@@ -199,28 +203,29 @@ docs/
 ### Getting Help
 
 1. **Check documentation** - Most questions are answered here
-2. **View logs** - `docker-compose logs -f`
+2. **View server logs** - Check terminal output
 3. **Create issue** - GitHub issues for bugs/features
 
 ### Useful Commands
 
 ```bash
-# View logs
-docker-compose logs -f
+# Start development server
+npm run dev
 
-# Restart application
-docker-compose restart
+# Build for production
+npm run build
 
-# Stop application
-docker-compose down
+# Start production server
+npm start
 
-# Rebuild and restart
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+# Run tests
+npm test
 
 # Access database
-docker exec -it pginspect-database-1 psql -U postgres -d pgadmin
+psql -U postgres -d pgadmin
+
+# Check database tables
+psql -U postgres -d pgadmin -c "\dt"
 ```
 
 ## Contributing

@@ -8,7 +8,6 @@
   A powerful, intuitive PostgreSQL database management tool with visual query builder, SQL editor, and real-time schema inspection.
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
   
@@ -31,31 +30,36 @@ pgInspect is a modern, self-hosted PostgreSQL database management tool that prov
 - 🔐 **Secure Authentication** - Google & Microsoft OAuth via Clerk
 - 🔒 **Encrypted Storage** - AES-256-GCM encryption for database credentials
 - 🌐 **Multi-Connection** - Manage multiple databases simultaneously
-- 🐳 **Docker Ready** - One-command deployment
 - 🎨 **Dark/Light Theme** - Beautiful modern UI
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Docker Desktop installed and running
+- Node.js 18+ or Bun installed
+- PostgreSQL 16+ installed locally
 - Git (to clone the repository)
 
-### Deployment (3 Simple Steps)
+### Setup (3 Simple Steps)
 
 ```bash
 # 1. Clone the repository
 git clone <YOUR_GIT_URL>
 cd pginspect
 
-# 2. Configure environment
-cp .env.docker.example .env.docker
-# Edit .env.docker with your Clerk keys (see docs/SETUP.md)
-
-# 3. Deploy with one command
-bash scripts/deploy.sh    # Linux/Mac
+# 2. Install dependencies
+npm install
 # OR
-pwsh scripts/deploy.ps1   # Windows
+bun install
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env with your Clerk keys and database URL (see docs/SETUP.md)
+
+# 4. Start the application
+npm run dev
+# OR
+bun run dev
 ```
 
 That's it! Open http://localhost:9000 and start managing your databases.
@@ -76,8 +80,7 @@ That's it! Open http://localhost:9000 and start managing your databases.
 **Backend:** Bun • Hono • Node.js  
 **Database:** PostgreSQL 16 • postgres.js  
 **Authentication:** Clerk (Google & Microsoft OAuth)  
-**Security:** AES-256-GCM • JWT • SQL Injection Prevention  
-**Deployment:** Docker
+**Security:** AES-256-GCM • JWT • SQL Injection Prevention
 
 ## 🔐 Security
 
@@ -88,16 +91,25 @@ That's it! Open http://localhost:9000 and start managing your databases.
 - JWT token verification for all API requests
 - Connection pooling with timeouts and limits
 
-## 📊 Default Credentials
+## 📊 Database Setup
 
-After deployment, connect to the built-in database:
+Set up your local PostgreSQL database:
 
+```bash
+# Create database
+createdb pgadmin
+
+# Run schema
+psql -d pgadmin -f db/schema.sql
+```
+
+Then connect using:
 ```
 Host:     localhost
 Port:     5432
 Database: pgadmin
 Username: postgres
-Password: postgres
+Password: your_password
 SSL Mode: disable
 ```
 

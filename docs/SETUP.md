@@ -6,19 +6,42 @@ Complete setup instructions for pgInspect.
 
 Before you begin, ensure you have:
 
-- **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop)
+- **Node.js 18+** or **Bun** - [Download Node.js](https://nodejs.org/) or [Download Bun](https://bun.sh/)
+- **PostgreSQL 16+** - [Download here](https://www.postgresql.org/download/)
 - **Git** - [Download here](https://git-scm.com/downloads)
 - **Clerk Account** - [Sign up free](https://clerk.com)
 
 ## Step-by-Step Setup
 
-### 1. Install Docker Desktop
+### 1. Install Prerequisites
 
-1. Download Docker Desktop for your OS
-2. Install and start Docker Desktop
-3. Verify Docker is running:
+#### Install Node.js or Bun
+
+Choose one:
+
+**Node.js:**
+```bash
+# Verify installation
+node --version  # Should be 18+
+npm --version
+```
+
+**Bun (recommended for faster performance):**
+```bash
+# Install Bun
+curl -fsSL https://bun.sh/install | bash
+
+# Verify installation
+bun --version
+```
+
+#### Install PostgreSQL
+
+1. Download PostgreSQL 16+ for your OS
+2. Install and start PostgreSQL service
+3. Verify installation:
    ```bash
-   docker --version
+   psql --version
    ```
 
 ### 2. Get Clerk Authentication Keys
@@ -66,51 +89,81 @@ git clone <YOUR_GIT_URL>
 cd pginspect
 ```
 
-### 4. Configure Environment
+### 4. Install Dependencies
+
+```bash
+# Using npm
+npm install
+
+# OR using Bun
+bun install
+```
+
+### 5. Setup Database
+
+Create the database and apply schema:
+
+```bash
+# Create database
+createdb pgadmin
+
+# Apply schema
+psql -d pgadmin -f db/schema.sql
+```
+
+If you need to use a different database name or credentials, update them in the next step.
+
+### 6. Configure Environment
 
 ```bash
 # Copy the example environment file
-cp .env.docker.example .env.docker
+cp .env.example .env
 ```
 
-Edit `.env.docker` and update the Clerk keys:
+Edit `.env` and update the configuration:
 
 ```env
 # Replace with your Clerk keys
 CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 CLERK_SECRET_KEY=sk_test_your_key_here
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# Update with your PostgreSQL credentials
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/pgadmin
+
+# Optional: Generate a secure encryption key
+ENCRYPTION_KEY=UEdJbnNwZWN0b3JFbmNyeXB0aW9uS2V5MjAyNFNlY3VyZVJhbmRvbUtleQ==
 ```
 
 **Important:** Use the same publishable key for both `CLERK_PUBLISHABLE_KEY` and `VITE_CLERK_PUBLISHABLE_KEY`.
 
-### 5. Deploy Application
-
-Run the deployment script:
+### 7. Start Application
 
 ```bash
-# Linux/Mac
-bash scripts/deploy.sh
+# Development mode (with hot reload)
+npm run dev
+# OR
+bun run dev
 
-# Windows PowerShell
-pwsh scripts/deploy.ps1
+# Production mode
+npm run build
+npm start
+# OR
+bun run build
+bun start
 ```
 
-The script will:
-- Check Docker is running
-- Build Docker images
-- Start all containers
-- Initialize the database
-- Display access URLs
+The application will start on:
+- **Frontend & API:** http://localhost:9000
 
-### 6. Access Application
+### 8. Access Application
 
 Open your browser and go to:
 - **http://localhost:9000**
 
 You should see the pgInspect landing page with "Sign In" button.
 
-### 7. Sign In
+### 9. Sign In
 
 1. Click "Sign In"
 2. Choose authentication method:
@@ -120,9 +173,9 @@ You should see the pgInspect landing page with "Sign In" button.
 3. Complete authentication
 4. You'll be redirected to the dashboard
 
-### 8. Connect to Database
+### 10. Connect to Database
 
-Try connecting to the built-in database:
+Try connecting to your local database:
 
 1. Click "New Connection"
 2. Fill in the details:
@@ -132,7 +185,7 @@ Try connecting to the built-in database:
    Port:     5432
    Database: pgadmin
    Username: postgres
-   Password: postgres
+   Password: your_password
    SSL Mode: disable
    ```
 3. Click "Save & Connect"
@@ -149,6 +202,9 @@ CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
+# Database Connection - Your local PostgreSQL
+DATABASE_URL=postgresql://postgres:password@localhost:5432/pgadmin
+
 # Encryption Key - Used to encrypt database passwords
 # Default is fine for development, generate new for production
 ENCRYPTION_KEY=UEdJbnNwZWN0b3JFbmNyeXB0aW9uS2V5MjAyNFNlY3VyZVJhbmRvbUtleQ==
@@ -157,9 +213,6 @@ ENCRYPTION_KEY=UEdJbnNwZWN0b3JFbmNyeXB0aW9uS2V5MjAyNFNlY3VyZVJhbmRvbUtleQ==
 ### Optional Settings
 
 ```env
-# Database Connection (defaults work for Docker)
-DATABASE_URL=postgresql://postgres:postgres@database:5432/pgadmin
-
 # Server Configuration
 PORT=9000                    # Backend API port
 NODE_ENV=development         # Environment mode
@@ -171,7 +224,7 @@ QUERY_TIMEOUT=30000         # Query timeout in ms
 MAX_RESULT_ROWS=1000        # Max rows returned
 
 # Frontend Configuration
-VITE_PORT=5000              # Frontend port
+VITE_PORT=5000              # Frontend port (if running separately)
 VITE_API_URL=http://localhost:9000
 VITE_API_TIMEOUT=30000
 ```
@@ -204,6 +257,7 @@ CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
 ENCRYPTION_KEY=<your-generated-key>
+DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
 ### 4. Configure Clerk for Production
@@ -214,45 +268,35 @@ ENCRYPTION_KEY=<your-generated-key>
    - Sign-up: `https://your-domain.com/sign-up`
    - After sign-in: `https://your-domain.com/app`
 
-### 5. Deploy
+### 5. Build and Deploy
 
 ```bash
-bash scripts/deploy.sh
+npm run build
+npm start
+# OR
+bun run build
+bun start
 ```
 
 ## Verification
 
 After setup, verify everything works:
 
-### 1. Check Containers
+### 1. Check Server
 
-```bash
-docker-compose ps
-```
-
-You should see three containers running:
-- `pginspect-app-1`
-- `pginspect-database-1`
-
-### 2. Check Logs
-
-```bash
-docker-compose logs -f
-```
-
-Look for:
+The terminal should show:
 - ✅ "Server running on port 9000"
 - ✅ "Database connected"
 - ✅ No error messages
 
-### 3. Test Frontend
+### 2. Test Frontend
 
 Open http://localhost:9000
 - ✅ Page loads
 - ✅ "Sign In" button visible
 - ✅ No console errors
 
-### 4. Test Backend
+### 3. Test Backend
 
 ```bash
 curl http://localhost:9000/api/health
@@ -260,14 +304,14 @@ curl http://localhost:9000/api/health
 
 Should return: `{"status":"ok"}`
 
-### 5. Test Authentication
+### 4. Test Authentication
 
 1. Click "Sign In"
 2. Sign in with Google/Microsoft/Email
 3. Should redirect to `/app`
 4. Dashboard should load
 
-### 6. Test Database Connection
+### 5. Test Database Connection
 
 1. Create a new connection to `localhost:5432`
 2. Should connect successfully
@@ -275,20 +319,29 @@ Should return: `{"status":"ok"}`
 
 ## Troubleshooting
 
-### Docker Not Running
+### PostgreSQL Not Running
 
-**Error:** `Cannot connect to the Docker daemon`
+**Error:** `Connection refused`
 
-**Solution:** Start Docker Desktop and wait for it to initialize.
+**Solution:** Start PostgreSQL service:
+```bash
+# Linux
+sudo systemctl start postgresql
+
+# macOS
+brew services start postgresql
+
+# Windows
+# Start from Services or pgAdmin
+```
 
 ### Port Already in Use
 
 **Error:** `port is already allocated`
 
-**Solution:** Change ports in `.env.docker`:
+**Solution:** Change port in `.env`:
 ```env
 PORT=9001
-VITE_PORT=5001
 ```
 
 ### Clerk Authentication Failed
@@ -296,18 +349,33 @@ VITE_PORT=5001
 **Error:** `Clerk: Invalid publishable key`
 
 **Solution:**
-1. Verify keys are correct in `.env.docker`
+1. Verify keys are correct in `.env`
 2. Ensure no extra spaces or quotes
-3. Restart containers: `docker-compose restart`
+3. Restart the server
 
 ### Can't Connect to Database
 
 **Error:** `Connection refused`
 
 **Solution:**
-1. Verify database container is running: `docker-compose ps`
-2. Check logs: `docker-compose logs database`
-3. Wait 10 seconds after startup for database to initialize
+1. Verify PostgreSQL is running
+2. Check credentials in DATABASE_URL
+3. Ensure database `pgadmin` exists: `createdb pgadmin`
+4. Verify schema is applied: `psql -d pgadmin -f db/schema.sql`
+
+### Module Not Found
+
+**Error:** `Cannot find module`
+
+**Solution:**
+```bash
+# Clean install
+rm -rf node_modules package-lock.json
+npm install
+# OR
+rm -rf node_modules bun.lockb
+bun install
+```
 
 For more issues, see [Troubleshooting Guide](TROUBLESHOOTING.md).
 
@@ -322,4 +390,4 @@ For more issues, see [Troubleshooting Guide](TROUBLESHOOTING.md).
 
 - **Documentation:** See [docs/](.) folder
 - **Issues:** Create a GitHub issue
-- **Logs:** Run `docker-compose logs -f`
+- **Logs:** Check terminal output

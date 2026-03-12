@@ -1,10 +1,11 @@
 # pgInspect - Quick Start
 
-Get pgInspect running in 3 simple steps.
+Get pgInspect running in 4 simple steps.
 
 ## Prerequisites
 
-- Docker Desktop installed and running
+- Node.js 18+ or Bun installed
+- PostgreSQL 16+ installed locally
 - Git
 
 ## Installation
@@ -16,19 +17,28 @@ git clone <YOUR_GIT_URL>
 cd pginspect
 ```
 
-### Step 2: Configure Environment
+### Step 2: Install Dependencies
+
+```bash
+npm install
+# OR
+bun install
+```
+
+### Step 3: Configure Environment
 
 ```bash
 # Copy environment file
-cp .env.docker.example .env.docker
+cp .env.example .env
 ```
 
-Edit `.env.docker` and add your Clerk keys:
+Edit `.env` and add your Clerk keys:
 
 ```env
 CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 CLERK_SECRET_KEY=sk_test_your_key_here
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/pgadmin
 ```
 
 **Get Clerk keys (free):**
@@ -38,17 +48,25 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 
 See [docs/SETUP.md](docs/SETUP.md) for detailed instructions.
 
-### Step 3: Deploy
+### Step 4: Setup Database
 
 ```bash
-# Linux/Mac
-bash scripts/deploy.sh
+# Create database
+createdb pgadmin
 
-# Windows
-pwsh scripts/deploy.ps1
+# Run schema
+psql -d pgadmin -f db/schema.sql
 ```
 
-That's it! Open http://localhost:5000
+### Step 5: Start Application
+
+```bash
+npm run dev
+# OR
+bun run dev
+```
+
+That's it! Open http://localhost:9000
 
 ## What You Get
 
@@ -58,28 +76,31 @@ That's it! Open http://localhost:5000
 
 ## First Connection
 
-Connect to the built-in database:
+Connect to your local database:
 
 ```
 Host:     localhost
 Port:     5432
 Database: pgadmin
 Username: postgres
-Password: postgres
+Password: your_password
 SSL Mode: disable
 ```
 
 ## Useful Commands
 
 ```bash
-# View logs
-docker-compose logs -f
+# Start development server
+npm run dev
 
-# Stop application
-docker-compose down
+# Build for production
+npm run build
 
-# Restart application
-docker-compose restart
+# Start production server
+npm start
+
+# Run tests
+npm test
 ```
 
 ## Documentation
