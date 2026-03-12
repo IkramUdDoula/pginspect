@@ -31,6 +31,7 @@ COPY --from=builder /app/db ./db
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/src/server ./src/server
 COPY --from=builder /app/src/shared ./src/shared
+COPY --from=builder /app/src/lib ./src/lib
 
 # Set production environment
 ENV NODE_ENV=production
