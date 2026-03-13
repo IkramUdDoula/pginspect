@@ -5,7 +5,7 @@ import { authMiddleware, getAuth } from '../middleware/auth';
 import { ViewsService } from '../services/viewsService';
 import { getConnection } from '../services/db';
 import { logger } from '../utils/logger';
-import type { CreateViewRequest, UpdateViewRequest, ViewExecutionRequest } from '../../shared/types';
+import type { CreateViewRequest, ViewExecutionRequest } from '../../shared/types';
 import postgres from 'postgres';
 
 // Application database connection (not user's target databases)
@@ -16,7 +16,7 @@ const getAppDb = () => {
   }
   
   return postgres(dbUrl, {
-    max: 10,
+    max: 3, // Reduced from 10 to avoid connection exhaustion
     idle_timeout: 20,
   });
 };
@@ -199,45 +199,6 @@ views.post('/', async (c) => {
   }
 });
 
-// Update an existing view
-views.put('/:id', async (c) => {
-  try {
-    const auth = getAuth(c);
-    const viewId = c.req.param('id');
-    const updates: UpdateViewRequest = await c.req.json();
-
-    logger.info('Updating view', { userId: auth.userId, viewId });
-
-    // Validate input data
-    const validationErrors = ViewsService.validateViewData(updates);
-    if (validationErrors.length > 0) {
-      return c.json({
-        success: false,
-        error: validationErrors.join(', '),
-      }, 400);
-    }
-
-    const updatedView = await ViewsService.updateView(viewId, auth.userId, updates);
-
-    logger.info('View updated successfully', { userId: auth.userId, viewId, viewName: updatedView.viewName });
-
-    return c.json({
-      success: true,
-      data: { view: updatedView },
-      message: 'View updated successfully',
-    });
-  } catch (error) {
-    logger.error('Failed to update view', error);
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update view',
-      },
-      500
-    );
-  }
-});
-
 // Delete a view
 views.delete('/:id', async (c) => {
   try {
@@ -267,6 +228,55 @@ views.delete('/:id', async (c) => {
       {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete view',
+      },
+      500
+    );
+  }
+});
+
+// Update a view (for auto-refresh interval and other settings)
+views.patch('/:id', async (c) => {
+  try {
+    const auth = getAuth(c);
+    const viewId = c.req.param('id');
+
+    logger.info('Updating view', { userId: auth.userId, viewId });
+
+    const rawBody = await c.req.text();
+    let updateData: Partial<CreateViewRequest>;
+    
+    try {
+      updateData = JSON.parse(rawBody);
+    } catch (parseError) {
+      return c.json({
+        success: false,
+        error: 'Invalid JSON in request body',
+      }, 400);
+    }
+
+    // Update the view
+    const updatedView = await ViewsService.updateView(viewId, auth.userId, updateData);
+
+    if (!updatedView) {
+      return c.json({
+        success: false,
+        error: 'View not found',
+      }, 404);
+    }
+
+    logger.info('View updated successfully', { userId: auth.userId, viewId });
+
+    return c.json({
+      success: true,
+      data: { view: updatedView },
+      message: 'View updated successfully',
+    });
+  } catch (error) {
+    logger.error('Failed to update view', error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update view',
       },
       500
     );

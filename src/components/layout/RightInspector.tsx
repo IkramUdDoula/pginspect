@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
-import { X, Key, Hash, Link2, Save, ArrowLeft, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Key, Hash, Link2, Save, ArrowLeft, Trash2, Download } from "lucide-react";
 import { useConnection } from "@/contexts/ConnectionContext";
+import { useViews } from "@/contexts/ViewContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
+import html2canvas from "html2canvas";
+import { ViewDetailsPanel } from "./ViewDetailsPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +32,15 @@ export function RightInspector() {
     activeConnection,
     activeSchema
   } = useConnection();
+  const { isViewMode, currentView } = useViews();
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const rowDetailsRef = useRef<HTMLDivElement>(null);
+
+  // In view mode, always treat as read-only
+  const isReadOnly = isViewMode && editingRecord;
 
   useEffect(() => {
     if (editingRecord) {
@@ -52,8 +61,15 @@ export function RightInspector() {
     }
   }, [editingRecord, creatingRecord, selectedTable]);
 
-  const isVisible = isInspectorOpen && !!selectedTable;
+  const isVisible = isInspectorOpen && (!!selectedTable || !!editingRecord || isViewMode);
   const targetWidth = isVisible ? (editingRecord || creatingRecord ? 320 : 288) : 0;
+
+  const formatCell = (value: unknown): string => {
+    if (value === null || value === undefined) return "NULL";
+    if (typeof value === "boolean") return value ? "true" : "false";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  };
 
   const formatSize = (bytes: number) => {
     const kb = bytes / 1024;
@@ -176,6 +192,46 @@ export function RightInspector() {
     setFormData((prev) => ({ ...prev, [colName]: value }));
   };
 
+  const handleDownloadRowSnapshot = async () => {
+    if (!editingRecord || !rowDetailsRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      // Capture the row details panel as canvas
+      const canvas = await html2canvas(rowDetailsRef.current, {
+        backgroundColor: '#0a0a0a',
+        scale: 2, // Higher quality
+        logging: false,
+        windowWidth: rowDetailsRef.current.scrollWidth,
+        windowHeight: rowDetailsRef.current.scrollHeight,
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate snapshot');
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const name = isViewMode && currentView ? currentView.viewName : selectedTable?.name || 'row';
+        a.download = `${name}_row_snapshot_${timestamp}_${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        toast.success('Row snapshot downloaded');
+      });
+    } catch (error) {
+      console.error('Failed to download snapshot:', error);
+      toast.error('Failed to download snapshot');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!editingRecord || !activeConnection?.id || !selectedTable) {
       return;
@@ -231,9 +287,69 @@ export function RightInspector() {
       className="border-l border-border bg-card/30 flex flex-col flex-shrink-0 h-full overflow-hidden transition-all duration-300 ease-in-out"
       style={{ width: targetWidth }}
     >
-      {selectedTable && (
+      {/* Show ViewDetailsPanel when in view mode with no row selected */}
+      {isViewMode && !editingRecord ? (
+        <ViewDetailsPanel />
+      ) : (selectedTable || editingRecord) ? (
         <div className="flex flex-col h-full min-w-[288px]">
-          {editingRecord || creatingRecord ? (
+          {isReadOnly ? (
+            <>
+              {/* Read-only view mode */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setEditingRecord(null); }} className="text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                  <div>
+                    <h3 className="text-sm font-semibold">Row Details</h3>
+                    <p className="text-xs text-muted-foreground">{isViewMode ? 'View mode' : 'Read-only'}</p>
+                  </div>
+                </div>
+                <button onClick={() => { setEditingRecord(null); setIsInspectorOpen(false); }} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div ref={rowDetailsRef} className="flex-1 overflow-y-auto scrollbar-thin bg-card">
+                {/* Header for snapshot */}
+                <div className="px-4 py-3 border-b border-border bg-card/50">
+                  <div className="text-xs font-semibold text-foreground mb-1">
+                    {isViewMode && currentView ? currentView.viewName : selectedTable?.name || 'Row Details'}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    Snapshot: {new Date().toLocaleString()}
+                  </div>
+                </div>
+                
+                {/* Row data */}
+                <div className="p-3 space-y-2">
+                  {Object.entries(editingRecord || {}).map(([key, value]) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-xs text-muted-foreground font-mono">{key}</label>
+                      <div className={`px-2 py-1.5 text-xs font-mono ${
+                        value === null || value === undefined ? 'text-muted-foreground/40 italic' : 'text-foreground/90'
+                      }`}>
+                        {formatCell(value)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Download button for row snapshot */}
+              <div className="p-3 border-t border-border">
+                <Button
+                  onClick={handleDownloadRowSnapshot}
+                  disabled={isDownloading}
+                  className="w-full h-9 text-xs"
+                  variant="outline"
+                >
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  {isDownloading ? 'Generating...' : 'Download Row Snapshot'}
+                </Button>
+              </div>
+            </>
+          ) : editingRecord || creatingRecord ? (
             <>
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-2">
@@ -364,7 +480,7 @@ export function RightInspector() {
             </>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Delete Record Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

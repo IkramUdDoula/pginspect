@@ -1,6 +1,6 @@
 // Dialog for saving queries as views
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { useViews } from '@/contexts/ViewContext';
 import { toast } from 'sonner';
@@ -16,35 +16,64 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { ColumnFilter } from '@/shared/types';
+import { appendFiltersToQuery, getFilterSummary } from '@/lib/filterToSQL';
 
 interface SaveViewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  filters?: Map<string, ColumnFilter>;
 }
 
-export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
+export function SaveViewDialog({ open, onOpenChange, filters }: SaveViewDialogProps) {
   const { activeConnection, activeSchema, sqlText, editorMode } = useConnection();
   const { createView } = useViews();
+  
+  const hasFilters = filters && filters.size > 0;
+  
   const [viewName, setViewName] = useState('');
   const [description, setDescription] = useState('');
+  const [includeFilters, setIncludeFilters] = useState(true);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Reset form when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setViewName('');
+      setDescription('');
+      setIncludeFilters(true);
+      setAutoRefreshInterval(0);
+    }
+  }, [open]);
+  
+  // Generate query with filters if enabled
+  const finalQuery = (includeFilters && hasFilters) 
+    ? appendFiltersToQuery(sqlText, filters)
+    : sqlText;
 
   const handleSave = async () => {
     console.log('=== SaveViewDialog: handleSave called ===');
     console.log('SaveViewDialog: viewName =', viewName);
     console.log('SaveViewDialog: description =', description);
-    console.log('SaveViewDialog: sqlText =', sqlText);
-    console.log('SaveViewDialog: activeConnection =', activeConnection);
-    console.log('SaveViewDialog: activeSchema =', activeSchema);
-    console.log('SaveViewDialog: editorMode =', editorMode);
+    console.log('SaveViewDialog: finalQuery =', finalQuery);
 
+    // Validation
     if (!viewName.trim()) {
       console.log('SaveViewDialog: ERROR - View name is empty');
       toast.error('View name is required');
       return;
     }
 
-    if (!sqlText.trim()) {
+    if (!finalQuery.trim()) {
       console.log('SaveViewDialog: ERROR - SQL text is empty');
       toast.error('Query text is required');
       return;
@@ -52,59 +81,47 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
 
     if (!activeConnection?.id || !activeSchema) {
       console.log('SaveViewDialog: ERROR - No active connection or schema');
-      console.log('SaveViewDialog: activeConnection?.id =', activeConnection?.id);
-      console.log('SaveViewDialog: activeSchema =', activeSchema);
       toast.error('No active connection or schema');
       return;
     }
 
-    let connectionId: number;
-    
-    console.log('SaveViewDialog: Checking connection ID format...');
-    console.log('SaveViewDialog: activeConnection.id =', activeConnection.id);
-    console.log('SaveViewDialog: activeConnection.savedConnectionId =', activeConnection.savedConnectionId);
-    
-    if (activeConnection.id.startsWith('saved_')) {
-      // This is a saved connection, extract the numeric ID
-      const rawId = activeConnection.id.replace('saved_', '');
-      console.log('SaveViewDialog: Extracted raw ID =', rawId);
-      connectionId = parseInt(rawId, 10);
-      console.log('SaveViewDialog: Parsed connectionId =', connectionId);
-    } else if (activeConnection.savedConnectionId) {
-      // This is a runtime connection but we have the saved connection ID
-      connectionId = activeConnection.savedConnectionId;
-      console.log('SaveViewDialog: Using savedConnectionId =', connectionId);
-    } else {
-      // This is a runtime connection without a saved connection ID
-      console.log('SaveViewDialog: ERROR - Runtime connection without saved ID');
-      toast.error('Connection must be saved before creating views. Please reconnect to save the connection.');
-      return;
-    }
-    
-    if (isNaN(connectionId)) {
-      console.log('SaveViewDialog: ERROR - connectionId is NaN');
-      console.log('SaveViewDialog: Original activeConnection.id =', activeConnection.id);
-      toast.error(`Invalid connection ID: ${activeConnection.id}`);
-      return;
-    }
-
-    console.log('SaveViewDialog: Creating view data object...');
-    const viewData = {
-      connectionId,
-      schemaName: activeSchema,
-      viewName: viewName.trim(),
-      description: description.trim() || undefined,
-      queryText: sqlText.trim(),
-      queryType: editorMode as 'sql' | 'visual',
-    };
-    console.log('SaveViewDialog: viewData =', viewData);
-
     setIsLoading(true);
-    console.log('SaveViewDialog: Set loading to true, calling createView...');
 
     try {
+      // Create new view
+      let connectionId: number;
+      
+      console.log('SaveViewDialog: Checking connection ID format...');
+      
+      if (activeConnection.id.startsWith('saved_')) {
+        const rawId = activeConnection.id.replace('saved_', '');
+        connectionId = parseInt(rawId, 10);
+      } else if (activeConnection.savedConnectionId) {
+        connectionId = activeConnection.savedConnectionId;
+      } else {
+        console.log('SaveViewDialog: ERROR - Runtime connection without saved ID');
+        toast.error('Connection must be saved before creating views. Please reconnect to save the connection.');
+        return;
+      }
+      
+      if (isNaN(connectionId)) {
+        console.log('SaveViewDialog: ERROR - connectionId is NaN');
+        toast.error(`Invalid connection ID: ${activeConnection.id}`);
+        return;
+      }
+
+      console.log('SaveViewDialog: Creating view data object...');
+      const viewData = {
+        connectionId,
+        schemaName: activeSchema,
+        viewName: viewName.trim(),
+        description: description.trim() || undefined,
+        queryText: finalQuery.trim(),
+        queryType: editorMode as 'sql' | 'visual',
+        autoRefreshInterval: autoRefreshInterval,
+      };
+
       const savedView = await createView(viewData);
-      console.log('SaveViewDialog: createView response =', savedView);
 
       if (savedView) {
         console.log('SaveViewDialog: SUCCESS - View saved successfully');
@@ -115,7 +132,7 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
         toast.error('Failed to save view - no response from server');
       }
     } catch (error) {
-      console.log('SaveViewDialog: ERROR - Exception in createView');
+      console.log('SaveViewDialog: ERROR - Exception in handleSave');
       console.error('SaveViewDialog: Exception details =', error);
       toast.error('Failed to save view');
     } finally {
@@ -129,6 +146,7 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
   const handleClose = () => {
     setViewName('');
     setDescription('');
+    setAutoRefreshInterval(0);
     setIsLoading(false);
     onOpenChange(false);
   };
@@ -139,7 +157,7 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
         <DialogHeader>
           <DialogTitle>Save as View</DialogTitle>
           <DialogDescription>
-            Save your current query as a reusable view for quick access later
+            Save your current query as a new reusable view
           </DialogDescription>
         </DialogHeader>
         
@@ -173,10 +191,57 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="auto-refresh" className="text-sm font-medium">
+              Auto-Refresh Interval
+            </Label>
+            <Select
+              value={autoRefreshInterval.toString()}
+              onValueChange={(value) => setAutoRefreshInterval(parseInt(value, 10))}
+              disabled={isLoading}
+            >
+              <SelectTrigger id="auto-refresh" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Off</SelectItem>
+                <SelectItem value="10000">10 seconds</SelectItem>
+                <SelectItem value="30000">30 seconds</SelectItem>
+                <SelectItem value="60000">1 minute</SelectItem>
+                <SelectItem value="300000">5 minutes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasFilters && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="include-filters"
+                  checked={includeFilters}
+                  onCheckedChange={(checked) => setIncludeFilters(!!checked)}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="include-filters" className="text-sm font-medium cursor-pointer">
+                  Include current filters ({filters.size})
+                </Label>
+              </div>
+              {includeFilters && (
+                <div className="pl-6 space-y-1">
+                  {getFilterSummary(filters).map((summary, i) => (
+                    <div key={i} className="text-xs text-muted-foreground font-mono">
+                      • {summary}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
             <Label className="text-sm font-medium">Query Preview</Label>
-            <div className="p-3 bg-muted rounded-md border">
-              <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-32 overflow-y-auto">
-                {sqlText || 'No query text'}
+            <div className="p-3 bg-muted rounded-md border max-h-48 overflow-y-auto scrollbar-thin">
+              <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">
+                {finalQuery || 'No query text'}
               </pre>
             </div>
           </div>
@@ -188,11 +253,11 @@ export function SaveViewDialog({ open, onOpenChange }: SaveViewDialogProps) {
           </div>
         </div>
         
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={handleClose} disabled={isLoading} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button onClick={handleSave} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? 'Saving...' : 'Save View'}
           </Button>
         </DialogFooter>

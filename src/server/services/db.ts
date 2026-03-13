@@ -122,7 +122,7 @@ export async function createConnection(info: ConnectionInfo): Promise<{ id: stri
       username: info.user,
       password: info.password,
       ssl: sslConfig,
-      max: parseInt(process.env.DB_POOL_MAX || '10'),
+      max: parseInt(process.env.DB_POOL_MAX || '3'), // Reduced from 10 to 3 for Supabase compatibility
       idle_timeout: 20,
       connect_timeout: CONNECTION_TIMEOUT / 1000,
       onnotice: () => {}, // Suppress notices

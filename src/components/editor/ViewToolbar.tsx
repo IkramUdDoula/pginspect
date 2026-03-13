@@ -1,7 +1,6 @@
 // Toolbar for view mode with refresh, edit, and auto-refresh controls
 
-import { useState } from 'react';
-import { RefreshCw, Edit, Clock } from 'lucide-react';
+import { RefreshCw, Edit } from 'lucide-react';
 import { useViews } from '@/contexts/ViewContext';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CircularTimer } from './CircularTimer';
 import { toast } from 'sonner';
 
 export function ViewToolbar() {
@@ -22,9 +22,9 @@ export function ViewToolbar() {
     autoRefreshInterval, 
     setAutoRefresh, 
     refreshCurrentView,
-    exitViewMode 
+    exitViewMode
   } = useViews();
-  const { setEditorMode, setSqlText } = useConnection();
+  const { setEditorMode, setSqlText, setIsInspectorOpen } = useConnection();
 
   const handleEditView = () => {
     if (!currentView) return;
@@ -58,12 +58,6 @@ export function ViewToolbar() {
     }
   };
 
-  const getAutoRefreshLabel = (interval: number) => {
-    if (interval === 0) return 'Off';
-    if (interval < 60000) return `${interval / 1000}s`;
-    return `${interval / 60000}m`;
-  };
-
   if (!currentView) return null;
 
   return (
@@ -81,16 +75,29 @@ export function ViewToolbar() {
         </div>
         
         {viewResults && (
-          <div className="text-xs text-muted-foreground">
+          <button
+            onClick={() => setIsInspectorOpen(true)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
             {viewResults.rowCount} rows • {viewResults.executionTime}ms
-          </div>
+          </button>
         )}
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Auto-refresh selector */}
+        {/* Auto-refresh selector with timer */}
         <div className="flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          {autoRefreshInterval > 0 ? (
+            <CircularTimer
+              duration={autoRefreshInterval}
+              isActive={!isLoading}
+              onComplete={handleRefresh}
+              size={14}
+              strokeWidth={2}
+            />
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/20" />
+          )}
           <Select
             value={autoRefreshInterval.toString()}
             onValueChange={handleAutoRefreshChange}

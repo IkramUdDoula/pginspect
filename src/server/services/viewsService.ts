@@ -2,7 +2,7 @@
 
 import postgres from 'postgres';
 import { logger } from '../utils/logger';
-import type { SavedView, CreateViewRequest, UpdateViewRequest } from '../../shared/types';
+import type { SavedView, CreateViewRequest } from '../../shared/types';
 
 // Application database connection (not user's target databases)
 const getAppDb = () => {
@@ -12,7 +12,7 @@ const getAppDb = () => {
   }
   
   return postgres(dbUrl, {
-    max: 10,
+    max: 3, // Reduced from 10 to avoid connection exhaustion
     idle_timeout: 20,
   });
 };
@@ -44,6 +44,7 @@ export class ViewsService {
           description,
           query_text,
           query_type,
+          auto_refresh_interval,
           created_at,
           updated_at
         FROM saved_views 
@@ -60,6 +61,7 @@ export class ViewsService {
         description: row.description,
         queryText: row.query_text,
         queryType: row.query_type as 'sql' | 'visual',
+        autoRefreshInterval: row.auto_refresh_interval || 0,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
       }));
@@ -86,6 +88,7 @@ export class ViewsService {
           description,
           query_text,
           query_type,
+          auto_refresh_interval,
           created_at,
           updated_at
         FROM saved_views 
@@ -106,6 +109,7 @@ export class ViewsService {
         description: row.description,
         queryText: row.query_text,
         queryType: row.query_type as 'sql' | 'visual',
+        autoRefreshInterval: row.auto_refresh_interval || 0,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
       };
@@ -150,7 +154,8 @@ export class ViewsService {
           view_name,
           description,
           query_text,
-          query_type
+          query_type,
+          auto_refresh_interval
         ) VALUES (
           ${userId},
           ${viewData.connectionId},
@@ -158,7 +163,8 @@ export class ViewsService {
           ${viewData.viewName},
           ${viewData.description || null},
           ${viewData.queryText},
-          ${viewData.queryType}
+          ${viewData.queryType},
+          ${viewData.autoRefreshInterval || 0}
         )
         RETURNING 
           id,
@@ -169,6 +175,7 @@ export class ViewsService {
           description,
           query_text,
           query_type,
+          auto_refresh_interval,
           created_at,
           updated_at
       `;
@@ -184,6 +191,7 @@ export class ViewsService {
         description: row.description,
         queryText: row.query_text,
         queryType: row.query_type as 'sql' | 'visual',
+        autoRefreshInterval: row.auto_refresh_interval || 0,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
       };
@@ -198,82 +206,6 @@ export class ViewsService {
         throw error;
       }
       throw new Error('Failed to create view');
-    }
-  }
-
-  /**
-   * Update an existing view
-   */
-  static async updateView(viewId: string, userId: string, updates: UpdateViewRequest): Promise<SavedView> {
-    const sql = getDb();
-    
-    try {
-      // Check if view exists and belongs to user
-      const existing = await this.getViewById(viewId, userId);
-      if (!existing) {
-        throw new Error('View not found');
-      }
-
-      // If updating name, check uniqueness
-      if (updates.viewName && updates.viewName !== existing.viewName) {
-        const nameCheck = await sql`
-          SELECT id FROM saved_views 
-          WHERE user_id = ${userId} 
-          AND connection_id = ${existing.connectionId} 
-          AND view_name = ${updates.viewName}
-          AND id != ${viewId}
-        `;
-
-        if (nameCheck.length > 0) {
-          throw new Error('A view with this name already exists for this connection');
-        }
-      }
-
-      const result = await sql`
-        UPDATE saved_views 
-        SET 
-          view_name = COALESCE(${updates.viewName}, view_name),
-          description = COALESCE(${updates.description}, description),
-          query_text = COALESCE(${updates.queryText}, query_text),
-          query_type = COALESCE(${updates.queryType}, query_type),
-          updated_at = NOW()
-        WHERE id = ${viewId} AND user_id = ${userId}
-        RETURNING 
-          id,
-          user_id,
-          connection_id,
-          schema_name,
-          view_name,
-          description,
-          query_text,
-          query_type,
-          created_at,
-          updated_at
-      `;
-
-      if (result.length === 0) {
-        throw new Error('View not found');
-      }
-
-      const row = result[0];
-      return {
-        id: row.id,
-        userId: row.user_id,
-        connectionId: row.connection_id,
-        schemaName: row.schema_name,
-        viewName: row.view_name,
-        description: row.description,
-        queryText: row.query_text,
-        queryType: row.query_type as 'sql' | 'visual',
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-      };
-    } catch (error) {
-      logger.error('Failed to update view', { viewId, userId, updates, error });
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to update view');
     }
   }
 
@@ -297,12 +229,95 @@ export class ViewsService {
   }
 
   /**
+   * Update a view
+   */
+  static async updateView(viewId: string, userId: string, updateData: Partial<CreateViewRequest>): Promise<SavedView | null> {
+    const sql = getDb();
+    
+    try {
+      // Build update query dynamically based on provided fields
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      if (updateData.viewName !== undefined) {
+        updates.push(`view_name = $${paramIndex++}`);
+        values.push(updateData.viewName);
+      }
+      if (updateData.description !== undefined) {
+        updates.push(`description = $${paramIndex++}`);
+        values.push(updateData.description || null);
+      }
+      if (updateData.queryText !== undefined) {
+        updates.push(`query_text = $${paramIndex++}`);
+        values.push(updateData.queryText);
+      }
+      if (updateData.queryType !== undefined) {
+        updates.push(`query_type = $${paramIndex++}`);
+        values.push(updateData.queryType);
+      }
+      if (updateData.autoRefreshInterval !== undefined) {
+        updates.push(`auto_refresh_interval = $${paramIndex++}`);
+        values.push(updateData.autoRefreshInterval);
+      }
+
+      if (updates.length === 0) {
+        // No updates provided, just return the existing view
+        return this.getViewById(viewId, userId);
+      }
+
+      // Add viewId and userId to values
+      values.push(viewId, userId);
+
+      const result = await sql.unsafe(`
+        UPDATE saved_views 
+        SET ${updates.join(', ')}, updated_at = NOW()
+        WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+        RETURNING 
+          id,
+          user_id,
+          connection_id,
+          schema_name,
+          view_name,
+          description,
+          query_text,
+          query_type,
+          auto_refresh_interval,
+          created_at,
+          updated_at
+      `, values);
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      const row = result[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        connectionId: row.connection_id,
+        schemaName: row.schema_name,
+        viewName: row.view_name,
+        description: row.description,
+        queryText: row.query_text,
+        queryType: row.query_type as 'sql' | 'visual',
+        autoRefreshInterval: row.auto_refresh_interval || 0,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+      };
+    } catch (error) {
+      logger.error('Failed to update view', { viewId, userId, error });
+      throw new Error('Failed to update view');
+    }
+  }
+
+  /**
    * Validate view data
    */
-  static validateViewData(data: CreateViewRequest | UpdateViewRequest): string[] {
+  static validateViewData(data: CreateViewRequest): string[] {
     const errors: string[] = [];
 
-    if ('viewName' in data && data.viewName !== undefined) {
+    if (data.viewName !== undefined) {
       if (!data.viewName || data.viewName.trim().length === 0) {
         errors.push('View name is required');
       } else if (data.viewName.length > 255) {
@@ -312,25 +327,25 @@ export class ViewsService {
       }
     }
 
-    if ('description' in data && data.description !== undefined && data.description !== null) {
+    if (data.description !== undefined && data.description !== null) {
       if (data.description.length > 1000) {
         errors.push('Description must be 1000 characters or less');
       }
     }
 
-    if ('queryText' in data && data.queryText !== undefined) {
+    if (data.queryText !== undefined) {
       if (!data.queryText || data.queryText.trim().length === 0) {
         errors.push('Query text is required');
       }
     }
 
-    if ('queryType' in data && data.queryType !== undefined) {
+    if (data.queryType !== undefined) {
       if (!['sql', 'visual'].includes(data.queryType)) {
         errors.push('Query type must be either "sql" or "visual"');
       }
     }
 
-    if ('connectionId' in data && data.connectionId !== undefined) {
+    if (data.connectionId !== undefined) {
       if (!Number.isInteger(data.connectionId) || data.connectionId <= 0) {
         errors.push('Connection ID must be a positive integer');
       }

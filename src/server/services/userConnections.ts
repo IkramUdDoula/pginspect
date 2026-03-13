@@ -13,7 +13,7 @@ const getAppDb = () => {
   }
   
   return postgres(dbUrl, {
-    max: 10,
+    max: 3, // Reduced from 10 to avoid connection exhaustion
     idle_timeout: 20,
   });
 };
