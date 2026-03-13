@@ -172,4 +172,10 @@ MIT
 
 ---
 
+## 🚀 Demo
+
+Visit - https://pginspect-production-3e4b.up.railway.app/ 
+
+**Note - You will not be able to sign up, since I am not allowing access for anyone in the demo instance. But feel free to fork and deploy in docker or railway.**
+
 Built with ❤️ by Ikram, for Everyone, with Claude
