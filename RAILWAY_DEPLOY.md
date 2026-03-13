@@ -59,15 +59,26 @@ railway variables --set DB_POOL_MAX=5
 
 ## 4. Initialize Database Schema
 
-Link your project and run the schema:
+Railway's PostgreSQL addon automatically provides `DATABASE_URL` and `DATABASE_PUBLIC_URL`. Initialize the schema:
 
 ```bash
-# Link to your Railway project
+# Link to your Railway project (first time only)
 railway link
 
-# Run schema using Node.js script
+# Run schema initialization script
 railway run node scripts/run-schema.js
+
+# Or use the npm script
+railway run npm run db:init
 ```
+
+The script will:
+- Create all required tables (users, user_connections, saved_views, audit_logs)
+- Set up indexes and triggers
+- Verify successful creation
+- Show detailed progress
+
+See [DB_SETUP.md](./DB_SETUP.md) for more initialization options and troubleshooting.
 
 ## 5. Deploy
 

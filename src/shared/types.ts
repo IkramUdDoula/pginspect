@@ -141,6 +141,23 @@ export interface ViewListResponse {
 export type AuditActionCategory = 'auth' | 'connection' | 'query' | 'view' | 'data' | 'schema' | 'system';
 export type AuditStatus = 'success' | 'error' | 'warning';
 
+// Audit log constants
+export const AUDIT_CATEGORIES: Array<{ value: AuditActionCategory; label: string }> = [
+  { value: 'auth', label: 'Authentication' },
+  { value: 'connection', label: 'Connection' },
+  { value: 'query', label: 'Query' },
+  { value: 'view', label: 'View' },
+  { value: 'data', label: 'Data' },
+  { value: 'schema', label: 'Schema' },
+  { value: 'system', label: 'System' },
+];
+
+export const AUDIT_STATUSES: Array<{ value: AuditStatus; label: string }> = [
+  { value: 'success', label: 'Success' },
+  { value: 'error', label: 'Error' },
+  { value: 'warning', label: 'Warning' },
+];
+
 export interface AuditLog {
   id: string;
   userId: string;
@@ -215,6 +232,8 @@ export interface CreateAuditLogRequest {
   status: AuditStatus;
   errorMessage?: string;
   metadata?: Record<string, any>;
+}
+
 // Column filtering types
 export type FilterOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'between' | 'in' | 'contains';
 export type FilterType = 'text' | 'number' | 'boolean' | 'date' | 'enum';

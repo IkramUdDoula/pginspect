@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { AuditLogFilter } from '@/shared/types';
+import { AUDIT_CATEGORIES, AUDIT_STATUSES } from '@/shared/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -15,15 +15,7 @@ interface AuditLogFiltersProps {
 }
 
 export function AuditLogFilters({ filters, onFilterChange }: AuditLogFiltersProps) {
-  const [searchInput, setSearchInput] = useState(filters.searchQuery || '');
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onFilterChange({ searchQuery: searchInput || undefined });
-  };
-
   const clearFilters = () => {
-    setSearchInput('');
     onFilterChange({
       actionCategory: undefined,
       actionType: undefined,
@@ -59,22 +51,6 @@ export function AuditLogFilters({ filters, onFilterChange }: AuditLogFiltersProp
         )}
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearchSubmit} className="space-y-2">
-        <Label className="text-xs">Search</Label>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Search logs..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-8 text-xs"
-          />
-          <Button type="submit" size="sm" className="h-8 text-xs">
-            Go
-          </Button>
-        </div>
-      </form>
-
       {/* Category */}
       <div className="space-y-2">
         <Label className="text-xs">Category</Label>
@@ -87,13 +63,11 @@ export function AuditLogFilters({ filters, onFilterChange }: AuditLogFiltersProp
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">All Categories</SelectItem>
-            <SelectItem value="auth" className="text-xs">Authentication</SelectItem>
-            <SelectItem value="connection" className="text-xs">Connection</SelectItem>
-            <SelectItem value="query" className="text-xs">Query</SelectItem>
-            <SelectItem value="view" className="text-xs">View</SelectItem>
-            <SelectItem value="data" className="text-xs">Data</SelectItem>
-            <SelectItem value="schema" className="text-xs">Schema</SelectItem>
-            <SelectItem value="system" className="text-xs">System</SelectItem>
+            {AUDIT_CATEGORIES.map((category) => (
+              <SelectItem key={category.value} value={category.value} className="text-xs">
+                {category.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -110,9 +84,11 @@ export function AuditLogFilters({ filters, onFilterChange }: AuditLogFiltersProp
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">All Status</SelectItem>
-            <SelectItem value="success" className="text-xs">Success</SelectItem>
-            <SelectItem value="error" className="text-xs">Error</SelectItem>
-            <SelectItem value="warning" className="text-xs">Warning</SelectItem>
+            {AUDIT_STATUSES.map((status) => (
+              <SelectItem key={status.value} value={status.value} className="text-xs">
+                {status.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

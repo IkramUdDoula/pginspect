@@ -2,6 +2,7 @@
 
 import { Hono } from 'hono';
 import { authMiddleware, getAuth } from '../middleware/auth';
+import { logAudit } from '../middleware/audit';
 import { ViewsService } from '../services/viewsService';
 import { getConnection } from '../services/db';
 import { logger } from '../utils/logger';
@@ -113,6 +114,7 @@ views.get('/:id', async (c) => {
 
 // Create a new view
 views.post('/', async (c) => {
+  const startTime = Date.now();
   console.log('=== Backend: POST /api/views called ===');
   
   try {
@@ -148,6 +150,19 @@ views.post('/', async (c) => {
     
     if (validationErrors.length > 0) {
       console.log('Backend: ERROR - Validation failed');
+      
+      await logAudit(c, {
+        actionType: 'view_create_failed',
+        actionCategory: 'view',
+        actionDescription: `View creation failed: ${validationErrors.join(', ')}`,
+        status: 'error',
+        errorMessage: validationErrors.join(', '),
+        connectionId: viewData.connectionId,
+        schemaName: viewData.schemaName,
+        resourceName: viewData.viewName,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: validationErrors.join(', '),
@@ -165,6 +180,19 @@ views.post('/', async (c) => {
 
     if (connectionCheck.length === 0) {
       console.log('Backend: ERROR - Connection not found or access denied');
+      
+      await logAudit(c, {
+        actionType: 'view_create_failed',
+        actionCategory: 'view',
+        actionDescription: `View creation failed: Connection not found or access denied`,
+        status: 'error',
+        errorMessage: 'Connection not found or access denied',
+        connectionId: viewData.connectionId,
+        schemaName: viewData.schemaName,
+        resourceName: viewData.viewName,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Connection not found or access denied',
@@ -176,6 +204,21 @@ views.post('/', async (c) => {
     console.log('Backend: Created view =', newView);
 
     logger.info('View created successfully', { userId: auth.userId, viewId: newView.id, viewName: newView.viewName });
+
+    await logAudit(c, {
+      actionType: 'view_create',
+      actionCategory: 'view',
+      actionDescription: `Created view "${viewData.viewName}" in schema "${viewData.schemaName}"`,
+      status: 'success',
+      connectionId: viewData.connectionId,
+      schemaName: viewData.schemaName,
+      resourceType: 'view',
+      resourceId: newView.id.toString(),
+      resourceName: viewData.viewName,
+      queryText: viewData.queryText,
+      queryType: viewData.queryType,
+      executionTimeMs: Date.now() - startTime,
+    });
 
     const response = {
       success: true,
@@ -189,6 +232,16 @@ views.post('/', async (c) => {
     console.log('Backend: ERROR - Exception in view creation');
     console.error('Backend: Exception details =', error);
     logger.error('Failed to create view', error);
+    
+    await logAudit(c, {
+      actionType: 'view_create_failed',
+      actionCategory: 'view',
+      actionDescription: `View creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Failed to create view',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json(
       {
         success: false,
@@ -201,15 +254,31 @@ views.post('/', async (c) => {
 
 // Delete a view
 views.delete('/:id', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const auth = getAuth(c);
     const viewId = c.req.param('id');
 
     logger.info('Deleting view', { userId: auth.userId, viewId });
 
+    // Get view details before deleting for audit log
+    const view = await ViewsService.getViewById(viewId, auth.userId);
+    
     const deleted = await ViewsService.deleteView(viewId, auth.userId);
 
     if (!deleted) {
+      await logAudit(c, {
+        actionType: 'view_delete_failed',
+        actionCategory: 'view',
+        actionDescription: `View deletion failed: View not found`,
+        status: 'error',
+        errorMessage: 'View not found',
+        resourceType: 'view',
+        resourceId: viewId,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'View not found',
@@ -218,12 +287,35 @@ views.delete('/:id', async (c) => {
 
     logger.info('View deleted successfully', { userId: auth.userId, viewId });
 
+    await logAudit(c, {
+      actionType: 'view_delete',
+      actionCategory: 'view',
+      actionDescription: `Deleted view "${view?.viewName || viewId}"`,
+      status: 'success',
+      connectionId: view?.connectionId ? parseInt(view.connectionId as any) : undefined,
+      schemaName: view?.schemaName,
+      resourceType: 'view',
+      resourceId: viewId,
+      resourceName: view?.viewName,
+      executionTimeMs: Date.now() - startTime,
+    });
+
     return c.json({
       success: true,
       message: 'View deleted successfully',
     });
   } catch (error) {
     logger.error('Failed to delete view', error);
+    
+    await logAudit(c, {
+      actionType: 'view_delete_failed',
+      actionCategory: 'view',
+      actionDescription: `View deletion failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Failed to delete view',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json(
       {
         success: false,
@@ -236,6 +328,8 @@ views.delete('/:id', async (c) => {
 
 // Update a view (for auto-refresh interval and other settings)
 views.patch('/:id', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const auth = getAuth(c);
     const viewId = c.req.param('id');
@@ -258,6 +352,17 @@ views.patch('/:id', async (c) => {
     const updatedView = await ViewsService.updateView(viewId, auth.userId, updateData);
 
     if (!updatedView) {
+      await logAudit(c, {
+        actionType: 'view_update_failed',
+        actionCategory: 'view',
+        actionDescription: `View update failed: View not found`,
+        status: 'error',
+        errorMessage: 'View not found',
+        resourceType: 'view',
+        resourceId: viewId,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'View not found',
@@ -266,6 +371,20 @@ views.patch('/:id', async (c) => {
 
     logger.info('View updated successfully', { userId: auth.userId, viewId });
 
+    await logAudit(c, {
+      actionType: 'view_update',
+      actionCategory: 'view',
+      actionDescription: `Updated view "${updatedView.viewName}"`,
+      status: 'success',
+      connectionId: updatedView.connectionId ? parseInt(updatedView.connectionId as any) : undefined,
+      schemaName: updatedView.schemaName,
+      resourceType: 'view',
+      resourceId: viewId,
+      resourceName: updatedView.viewName,
+      executionTimeMs: Date.now() - startTime,
+      metadata: { updatedFields: Object.keys(updateData) },
+    });
+
     return c.json({
       success: true,
       data: { view: updatedView },
@@ -273,6 +392,16 @@ views.patch('/:id', async (c) => {
     });
   } catch (error) {
     logger.error('Failed to update view', error);
+    
+    await logAudit(c, {
+      actionType: 'view_update_failed',
+      actionCategory: 'view',
+      actionDescription: `View update failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Failed to update view',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json(
       {
         success: false,
@@ -285,6 +414,8 @@ views.patch('/:id', async (c) => {
 
 // Execute a view
 views.post('/:id/execute', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const auth = getAuth(c);
     const viewId = c.req.param('id');
@@ -294,6 +425,17 @@ views.post('/:id/execute', async (c) => {
     // Get the view
     const view = await ViewsService.getViewById(viewId, auth.userId);
     if (!view) {
+      await logAudit(c, {
+        actionType: 'view_execute_failed',
+        actionCategory: 'view',
+        actionDescription: `View execution failed: View not found`,
+        status: 'error',
+        errorMessage: 'View not found',
+        resourceType: 'view',
+        resourceId: viewId,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'View not found',
@@ -309,6 +451,19 @@ views.post('/:id/execute', async (c) => {
     `;
 
     if (connectionResult.length === 0) {
+      await logAudit(c, {
+        actionType: 'view_execute_failed',
+        actionCategory: 'view',
+        actionDescription: `View execution failed: Connection not found`,
+        status: 'error',
+        errorMessage: 'Connection not found or access denied',
+        connectionId: view.connectionId ? parseInt(view.connectionId as any) : undefined,
+        resourceType: 'view',
+        resourceId: viewId,
+        resourceName: view.viewName,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Connection not found or access denied',
@@ -339,6 +494,22 @@ views.post('/:id/execute', async (c) => {
       connection = runtimeConnection;
     } catch (error) {
       logger.error('Failed to create runtime connection for view execution', error);
+      
+      await logAudit(c, {
+        actionType: 'view_execute_failed',
+        actionCategory: 'view',
+        actionDescription: `View execution failed: Connection error`,
+        status: 'error',
+        errorMessage: 'Failed to connect to database',
+        connectionId: view.connectionId ? parseInt(view.connectionId as any) : undefined,
+        connectionName: savedConn.name as string,
+        databaseName: savedConn.database as string,
+        resourceType: 'view',
+        resourceId: viewId,
+        resourceName: view.viewName,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Failed to connect to database. Please check your connection settings.',
@@ -346,11 +517,11 @@ views.post('/:id/execute', async (c) => {
     }
 
     // Execute the query
-    const startTime = Date.now();
+    const queryStartTime = Date.now();
     
     try {
       const result = await connection.unsafe(view.queryText);
-      const executionTime = Date.now() - startTime;
+      const executionTime = Date.now() - queryStartTime;
 
       // Format the result
       const columns = result.length > 0 ? Object.keys(result[0]) : [];
@@ -361,6 +532,23 @@ views.post('/:id/execute', async (c) => {
         viewId, 
         rowCount: rows.length, 
         executionTime 
+      });
+
+      await logAudit(c, {
+        actionType: 'view_execute',
+        actionCategory: 'view',
+        actionDescription: `Executed view "${view.viewName}"`,
+        status: 'success',
+        connectionId: view.connectionId ? parseInt(view.connectionId as any) : undefined,
+        connectionName: savedConn.name as string,
+        databaseName: savedConn.database as string,
+        schemaName: view.schemaName,
+        resourceType: 'view',
+        resourceId: viewId,
+        resourceName: view.viewName,
+        queryText: view.queryText,
+        rowsAffected: rows.length,
+        executionTimeMs: executionTime,
       });
 
       return c.json({
@@ -382,6 +570,24 @@ views.post('/:id/execute', async (c) => {
       });
     } catch (queryError) {
       logger.error('View query execution failed', { userId: auth.userId, viewId, error: queryError });
+      
+      await logAudit(c, {
+        actionType: 'view_execute_failed',
+        actionCategory: 'view',
+        actionDescription: `View execution failed: ${queryError instanceof Error ? queryError.message : 'Query error'}`,
+        status: 'error',
+        errorMessage: queryError instanceof Error ? queryError.message : 'Query execution failed',
+        connectionId: view.connectionId ? parseInt(view.connectionId as any) : undefined,
+        connectionName: savedConn.name as string,
+        databaseName: savedConn.database as string,
+        schemaName: view.schemaName,
+        resourceType: 'view',
+        resourceId: viewId,
+        resourceName: view.viewName,
+        queryText: view.queryText,
+        executionTimeMs: Date.now() - queryStartTime,
+      });
+      
       return c.json({
         success: false,
         error: queryError instanceof Error ? queryError.message : 'Query execution failed',
@@ -389,6 +595,16 @@ views.post('/:id/execute', async (c) => {
     }
   } catch (error) {
     logger.error('Failed to execute view', error);
+    
+    await logAudit(c, {
+      actionType: 'view_execute_failed',
+      actionCategory: 'view',
+      actionDescription: `View execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Failed to execute view',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json(
       {
         success: false,

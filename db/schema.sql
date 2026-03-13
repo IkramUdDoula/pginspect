@@ -1,6 +1,7 @@
 -- pgInspect Database Schema
--- Run this after docker-compose up to initialize the database
--- Usage: docker exec -i pginspect-database-1 psql -U postgres -d pgadmin < db/schema.sql
+-- This schema is automatically applied on first Docker startup via docker-entrypoint-initdb.d
+-- To manually run after deployment: npm run db:init
+-- Or via Docker: docker exec -i pginspect-db psql -U postgres -d pgadmin < db/schema.sql
 
 -- ============================================================================
 -- USERS TABLE

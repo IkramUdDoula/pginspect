@@ -76,7 +76,8 @@ cp .env.example .env
 
 # 4. Setup database
 createdb pgadmin
-psql -d pgadmin -f db/schema.sql
+npm run db:init
+# Or: psql -d pgadmin -f db/schema.sql
 
 # 5. Start development server 
 # Note: make sure docker instance of the app is not running. Otherwise this will fail since local deployment need port 3000 to be open. 
@@ -169,6 +170,12 @@ All credentials are encrypted with AES-256-GCM before storage.
 ## 📄 License
 
 MIT
+
+## 📚 Documentation
+
+- [Railway Deployment Guide](./RAILWAY_DEPLOY.md) - Deploy to Railway
+- [Database Setup Guide](./DB_SETUP.md) - Initialize database schema
+- [Audit Log Tracking](./AUDIT_LOG_TRACKING.md) - Audit logging details
 
 ---
 
