@@ -44,6 +44,9 @@ export class AuditService {
         ? request.queryText.substring(0, MAX_QUERY_LENGTH)
         : null;
 
+      // Convert undefined to null for postgres.js
+      const toNull = (value: any) => value === undefined ? null : value;
+
       await db`
         INSERT INTO audit_logs (
           user_id, user_email, user_name,
@@ -55,14 +58,14 @@ export class AuditService {
           ip_address, user_agent, request_id,
           metadata
         ) VALUES (
-          ${context.userId}, ${context.userEmail}, ${context.userName},
+          ${context.userId}, ${context.userEmail}, ${toNull(context.userName)},
           ${request.actionType}, ${request.actionCategory}, ${request.actionDescription},
-          ${request.connectionId}, ${request.connectionName}, ${request.databaseName}, 
-          ${request.schemaName}, ${request.tableName},
-          ${request.resourceType}, ${request.resourceId}, ${request.resourceName},
-          ${queryText}, ${request.queryType}, ${request.rowsAffected}, ${request.executionTimeMs},
-          ${request.status}, ${request.errorMessage},
-          ${context.ipAddress}, ${context.userAgent}, ${context.requestId},
+          ${toNull(request.connectionId)}, ${toNull(request.connectionName)}, ${toNull(request.databaseName)}, 
+          ${toNull(request.schemaName)}, ${toNull(request.tableName)},
+          ${toNull(request.resourceType)}, ${toNull(request.resourceId)}, ${toNull(request.resourceName)},
+          ${queryText}, ${toNull(request.queryType)}, ${toNull(request.rowsAffected)}, ${toNull(request.executionTimeMs)},
+          ${request.status}, ${toNull(request.errorMessage)},
+          ${toNull(context.ipAddress)}, ${toNull(context.userAgent)}, ${toNull(context.requestId)},
           ${request.metadata ? db.json(request.metadata) : null}
         )
       `;

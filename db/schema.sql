@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS saved_views (
   description TEXT,
   query_text TEXT NOT NULL,
   query_type VARCHAR(20) NOT NULL CHECK (query_type IN ('sql', 'visual')),
+  auto_refresh_interval INTEGER,  -- Auto-refresh interval in seconds (NULL = disabled)
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

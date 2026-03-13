@@ -1,7 +1,7 @@
 // Audit log routes
 
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, getAuth } from '../middleware/auth';
 import { AuditService } from '../services/auditService';
 import { logger } from '../utils/logger';
 import type { AuditLogFilter } from '../../shared/types';
@@ -17,7 +17,7 @@ audit.use('*', authMiddleware);
  */
 audit.get('/logs', async (c) => {
   try {
-    const user = c.get('user');
+    const auth = getAuth(c);
     
     // Parse query parameters
     const filters: AuditLogFilter = {
@@ -34,7 +34,7 @@ audit.get('/logs', async (c) => {
       offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : 0,
     };
 
-    const result = await AuditService.getLogs(user.id, filters);
+    const result = await AuditService.getLogs(auth.userId, filters);
 
     return c.json({
       success: true,
@@ -55,10 +55,10 @@ audit.get('/logs', async (c) => {
  */
 audit.get('/logs/:id', async (c) => {
   try {
-    const user = c.get('user');
+    const auth = getAuth(c);
     const logId = c.req.param('id');
 
-    const log = await AuditService.getLog(user.id, logId);
+    const log = await AuditService.getLog(auth.userId, logId);
 
     if (!log) {
       return c.json({
@@ -86,9 +86,9 @@ audit.get('/logs/:id', async (c) => {
  */
 audit.get('/stats', async (c) => {
   try {
-    const user = c.get('user');
+    const auth = getAuth(c);
 
-    const stats = await AuditService.getStats(user.id);
+    const stats = await AuditService.getStats(auth.userId);
 
     return c.json({
       success: true,
@@ -109,7 +109,7 @@ audit.get('/stats', async (c) => {
  */
 audit.post('/export', async (c) => {
   try {
-    const user = c.get('user');
+    const auth = getAuth(c);
     const body = await c.req.json();
     
     const filters: AuditLogFilter = {
@@ -120,7 +120,7 @@ audit.post('/export', async (c) => {
 
     const format = body.format || 'json';
 
-    const result = await AuditService.getLogs(user.id, filters);
+    const result = await AuditService.getLogs(auth.userId, filters);
 
     if (format === 'csv') {
       // Convert to CSV

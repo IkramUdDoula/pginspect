@@ -8,11 +8,31 @@ import type { CreateAuditLogRequest } from '../../shared/types';
 /**
  * Helper to create audit context from request
  */
-export function createAuditContext(c: Context) {
-  const user = c.get('user');
+export async function createAuditContext(c: Context) {
+  const auth = c.get('auth');
   
-  if (!user) {
+  if (!auth) {
     return null;
+  }
+
+  // Get user details from database
+  let userEmail = 'unknown';
+  let userName: string | null = null;
+  
+  try {
+    const { getAppDb } = await import('../services/supabaseDb');
+    const db = getAppDb();
+    const result = await db`
+      SELECT email, name FROM users WHERE id = ${auth.userId} LIMIT 1
+    `;
+    
+    if (result.length > 0) {
+      userEmail = result[0].email || 'unknown';
+      userName = result[0].name || null;
+    }
+  } catch (error) {
+    // Silently fail - we'll use 'unknown' as fallback
+    logger.debug('Could not fetch user details for audit log', { userId: auth.userId });
   }
 
   // Extract IP address
@@ -28,9 +48,9 @@ export function createAuditContext(c: Context) {
   const requestId = c.req.header('x-request-id') || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   return {
-    userId: user.id,
-    userEmail: user.email,
-    userName: user.name,
+    userId: auth.userId,
+    userEmail,
+    userName,
     ipAddress,
     userAgent,
     requestId,
@@ -44,7 +64,7 @@ export async function logAudit(
   c: Context,
   request: CreateAuditLogRequest
 ): Promise<void> {
-  const context = createAuditContext(c);
+  const context = await createAuditContext(c);
   
   if (!context) {
     logger.warn('Cannot create audit log: no user context');
@@ -87,7 +107,7 @@ export async function auditMiddleware(c: Context, next: Next) {
 
   // Log errors
   if (status >= 400) {
-    const context = createAuditContext(c);
+    const context = await createAuditContext(c);
     if (context) {
       await AuditService.createLog(context, {
         actionType: 'api_error',

@@ -12,6 +12,7 @@ import { SaveViewDialog } from "@/components/editor/SaveViewDialog";
 import { ViewToolbar } from "@/components/editor/ViewToolbar";
 import { ResultsPanel } from "@/components/results/ResultsPanel";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { AuditLogView } from "@/components/audit/AuditLogView";
 import { blocksToSQL } from "@/lib/queryBuilder";
 import { Play, Layers, Code, PanelRight, Plus, Save } from "lucide-react";
 
@@ -20,7 +21,7 @@ function AppContent() {
   const {
     activeConnection, connections, isConnectionManagerOpen, setIsConnectionManagerOpen,
     addConnection, editorMode, setEditorMode, queryBlocks, activeSchema,
-    setSqlText, sqlText, runQuery, showDashboard, isInspectorOpen, setIsInspectorOpen,
+    setSqlText, sqlText, runQuery, showDashboard, showAudit, isInspectorOpen, setIsInspectorOpen,
     selectedTable, setCreatingRecord, setEditingRecord, isInitialLoad,
   } = ctx;
 
@@ -50,12 +51,14 @@ function AppContent() {
     <div className="h-screen flex flex-col overflow-hidden">
       <TopNavbar />
       <div className="flex flex-1 overflow-hidden">
-        {!showDashboard && <LeftSidebar />}
+        {!showDashboard && !showAudit && <LeftSidebar />}
 
         {/* Center workspace */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {showDashboard ? (
             <Dashboard />
+          ) : showAudit ? (
+            <AuditLogView />
           ) : (
             <>
               {/* Editor toolbar or View toolbar */}
@@ -137,7 +140,7 @@ function AppContent() {
           )}
         </div>
 
-        {!showDashboard && <RightInspector />}
+        {!showDashboard && !showAudit && <RightInspector />}
       </div>
 
       {/* Save View Dialog */}

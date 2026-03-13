@@ -6,8 +6,12 @@ interface AuditLogStatsProps {
 }
 
 export function AuditLogStats({ stats }: AuditLogStatsProps) {
-  const errorRate = stats.totalLogs > 0 
-    ? ((stats.errorCount / stats.totalLogs) * 100).toFixed(1)
+  const totalLogs = stats?.totalLogs ?? 0;
+  const successCount = stats?.successCount ?? 0;
+  const errorCount = stats?.errorCount ?? 0;
+  
+  const errorRate = totalLogs > 0 
+    ? ((errorCount / totalLogs) * 100).toFixed(1)
     : '0.0';
 
   return (
@@ -20,7 +24,7 @@ export function AuditLogStats({ stats }: AuditLogStatsProps) {
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Total Logs</div>
-            <div className="text-lg font-semibold">{stats.totalLogs.toLocaleString()}</div>
+            <div className="text-lg font-semibold">{totalLogs.toLocaleString()}</div>
           </div>
         </div>
 
@@ -31,7 +35,7 @@ export function AuditLogStats({ stats }: AuditLogStatsProps) {
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Success</div>
-            <div className="text-lg font-semibold">{stats.successCount.toLocaleString()}</div>
+            <div className="text-lg font-semibold">{successCount.toLocaleString()}</div>
           </div>
         </div>
 
@@ -42,7 +46,7 @@ export function AuditLogStats({ stats }: AuditLogStatsProps) {
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Errors</div>
-            <div className="text-lg font-semibold">{stats.errorCount.toLocaleString()}</div>
+            <div className="text-lg font-semibold">{errorCount.toLocaleString()}</div>
           </div>
         </div>
 
