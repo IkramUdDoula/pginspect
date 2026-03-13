@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { AuditLog, AuditLogFilter } from '@/shared/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Download, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 interface AuditLogTableProps {
   logs: AuditLog[];
@@ -75,7 +75,7 @@ export function AuditLogTable({ logs, total, filters, onPageChange, onRowClick, 
           </Button>
           
           {exportOpen && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border rounded-lg shadow-xl z-10 py-1">
+            <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border rounded-lg shadow-xl z-50 py-1">
               <button
                 onClick={() => { onExport('json'); setExportOpen(false); }}
                 className="w-full px-3 py-2 text-xs text-left hover:bg-surface-hover"
@@ -118,7 +118,7 @@ export function AuditLogTable({ logs, total, filters, onPageChange, onRowClick, 
                   {getStatusIcon(log.status)}
                 </td>
                 <td className="px-3 py-3 text-muted-foreground">
-                  {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                  {format(new Date(log.timestamp), 'MMM d, yyyy, h:mm:ss a')}
                 </td>
                 <td className="px-3 py-3">
                   <span className={`font-medium ${getCategoryColor(log.actionCategory)}`}>

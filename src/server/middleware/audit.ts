@@ -15,24 +15,50 @@ export async function createAuditContext(c: Context) {
     return null;
   }
 
-  // Get user details from database
+  // Get user details from database first, fallback to Clerk if not found
   let userEmail = 'unknown';
   let userName: string | null = null;
   
   try {
-    const { getAppDb } = await import('../services/supabaseDb');
-    const db = getAppDb();
-    const result = await db`
-      SELECT email, name FROM users WHERE id = ${auth.userId} LIMIT 1
-    `;
+    // Use postgres.js to query the app database
+    const postgres = await import('postgres');
+    const dbUrl = process.env.DATABASE_URL;
     
-    if (result.length > 0) {
-      userEmail = result[0].email || 'unknown';
-      userName = result[0].name || null;
+    if (dbUrl) {
+      const sql = postgres.default(dbUrl, {
+        max: 1,
+        idle_timeout: 20,
+      });
+      
+      const result = await sql`
+        SELECT email, name FROM users WHERE id = ${auth.userId} LIMIT 1
+      `;
+      
+      await sql.end();
+      
+      if (result.length > 0) {
+        userEmail = result[0].email || 'unknown';
+        userName = result[0].name || null;
+      } else {
+        // User not in database yet, fetch from Clerk
+        try {
+          const { createClerkClient } = await import('@clerk/backend');
+          const clerkClient = createClerkClient({
+            secretKey: process.env.CLERK_SECRET_KEY,
+          });
+          const user = await clerkClient.users.getUser(auth.userId);
+          userEmail = user.emailAddresses[0]?.emailAddress || 'unknown';
+          userName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.firstName || user.lastName || null;
+        } catch (clerkError) {
+          logger.debug('Could not fetch user from Clerk', { userId: auth.userId });
+        }
+      }
     }
   } catch (error) {
     // Silently fail - we'll use 'unknown' as fallback
-    logger.debug('Could not fetch user details for audit log', { userId: auth.userId });
+    logger.debug('Could not fetch user details for audit log', { userId: auth.userId, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 
   // Extract IP address

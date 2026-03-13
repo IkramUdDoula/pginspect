@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth';
+import { logAudit } from '../middleware/audit';
 import { getConnection } from '../services/db';
 import { logger } from '../utils/logger';
 import type { DataInsertRequest, DataUpdateRequest, DataDeleteRequest } from '@/shared/types';
@@ -11,6 +12,8 @@ app.use('*', authMiddleware);
 
 // Insert data
 app.post('/insert', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const body = await c.req.json() as DataInsertRequest;
     const { connectionId, schema, table, data } = body;
@@ -24,6 +27,17 @@ app.post('/insert', async (c) => {
 
     const sql = getConnection(connectionId);
     if (!sql) {
+      await logAudit(c, {
+        actionType: 'data_insert_failed',
+        actionCategory: 'data',
+        actionDescription: `Data insert failed: Connection not found`,
+        status: 'error',
+        errorMessage: 'Connection not found',
+        schemaName: schema,
+        tableName: table,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Connection not found',
@@ -44,6 +58,20 @@ app.post('/insert', async (c) => {
     logger.info('Executing INSERT query', { query, values });
     const result = await sql.unsafe(query, values as any[]) as any[];
 
+    await logAudit(c, {
+      actionType: 'data_insert',
+      actionCategory: 'data',
+      actionDescription: `Inserted row into ${schema}.${table}`,
+      status: 'success',
+      schemaName: schema,
+      tableName: table,
+      queryText: query,
+      queryType: 'INSERT',
+      rowsAffected: result.length,
+      executionTimeMs: Date.now() - startTime,
+      metadata: { columns: columns },
+    });
+
     return c.json({
       success: true,
       data: {
@@ -53,6 +81,16 @@ app.post('/insert', async (c) => {
     });
   } catch (error) {
     logger.error('Insert data error', { error });
+    
+    await logAudit(c, {
+      actionType: 'data_insert_failed',
+      actionCategory: 'data',
+      actionDescription: `Data insert failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Insert failed',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Insert failed',
@@ -62,6 +100,8 @@ app.post('/insert', async (c) => {
 
 // Update data
 app.post('/update', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const body = await c.req.json() as DataUpdateRequest;
     const { connectionId, schema, table, where, data } = body;
@@ -75,6 +115,17 @@ app.post('/update', async (c) => {
 
     const sql = getConnection(connectionId);
     if (!sql) {
+      await logAudit(c, {
+        actionType: 'data_update_failed',
+        actionCategory: 'data',
+        actionDescription: `Data update failed: Connection not found`,
+        status: 'error',
+        errorMessage: 'Connection not found',
+        schemaName: schema,
+        tableName: table,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Connection not found',
@@ -101,6 +152,23 @@ app.post('/update', async (c) => {
     logger.info('Executing UPDATE query', { query, values: allValues });
     const result = await sql.unsafe(query, allValues as any[]) as any[];
 
+    await logAudit(c, {
+      actionType: 'data_update',
+      actionCategory: 'data',
+      actionDescription: `Updated ${result.length} row(s) in ${schema}.${table}`,
+      status: 'success',
+      schemaName: schema,
+      tableName: table,
+      queryText: query,
+      queryType: 'UPDATE',
+      rowsAffected: result.length,
+      executionTimeMs: Date.now() - startTime,
+      metadata: { 
+        updatedColumns: dataColumns,
+        whereConditions: whereColumns,
+      },
+    });
+
     return c.json({
       success: true,
       data: {
@@ -110,6 +178,16 @@ app.post('/update', async (c) => {
     });
   } catch (error) {
     logger.error('Update data error', { error });
+    
+    await logAudit(c, {
+      actionType: 'data_update_failed',
+      actionCategory: 'data',
+      actionDescription: `Data update failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Update failed',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Update failed',
@@ -119,6 +197,8 @@ app.post('/update', async (c) => {
 
 // Delete data
 app.post('/delete', async (c) => {
+  const startTime = Date.now();
+  
   try {
     const body = await c.req.json() as DataDeleteRequest;
     const { connectionId, schema, table, where } = body;
@@ -132,6 +212,17 @@ app.post('/delete', async (c) => {
 
     const sql = getConnection(connectionId);
     if (!sql) {
+      await logAudit(c, {
+        actionType: 'data_delete_failed',
+        actionCategory: 'data',
+        actionDescription: `Data delete failed: Connection not found`,
+        status: 'error',
+        errorMessage: 'Connection not found',
+        schemaName: schema,
+        tableName: table,
+        executionTimeMs: Date.now() - startTime,
+      });
+      
       return c.json({
         success: false,
         error: 'Connection not found',
@@ -152,6 +243,20 @@ app.post('/delete', async (c) => {
     logger.info('Executing DELETE query', { query, values: whereValues });
     const result = await sql.unsafe(query, whereValues as any[]) as any[];
 
+    await logAudit(c, {
+      actionType: 'data_delete',
+      actionCategory: 'data',
+      actionDescription: `Deleted ${result.length} row(s) from ${schema}.${table}`,
+      status: 'success',
+      schemaName: schema,
+      tableName: table,
+      queryText: query,
+      queryType: 'DELETE',
+      rowsAffected: result.length,
+      executionTimeMs: Date.now() - startTime,
+      metadata: { whereConditions: whereColumns },
+    });
+
     return c.json({
       success: true,
       data: {
@@ -161,6 +266,16 @@ app.post('/delete', async (c) => {
     });
   } catch (error) {
     logger.error('Delete data error', { error });
+    
+    await logAudit(c, {
+      actionType: 'data_delete_failed',
+      actionCategory: 'data',
+      actionDescription: `Data delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Delete failed',
+      executionTimeMs: Date.now() - startTime,
+    });
+    
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Delete failed',

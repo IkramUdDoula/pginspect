@@ -48,7 +48,7 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {getStatusIcon(log.status)}
@@ -110,7 +110,7 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
                   Copy
                 </Button>
               </div>
-              <div className="bg-secondary/30 rounded-lg p-3">
+              <div className="bg-secondary/30 rounded-lg p-3 max-h-64 overflow-y-auto scrollbar-thin">
                 <pre className="text-xs font-mono whitespace-pre-wrap">{log.queryText}</pre>
               </div>
               <div className="bg-secondary/30 rounded-lg p-3 space-y-0 mt-2">
@@ -125,7 +125,7 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
           {log.errorMessage && (
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-red-500">Error Message</h3>
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 max-h-32 overflow-y-auto scrollbar-thin">
                 <p className="text-xs text-red-500">{log.errorMessage}</p>
               </div>
             </div>
@@ -156,7 +156,7 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
                   Copy
                 </Button>
               </div>
-              <div className="bg-secondary/30 rounded-lg p-3">
+              <div className="bg-secondary/30 rounded-lg p-3 max-h-64 overflow-y-auto scrollbar-thin">
                 <pre className="text-xs font-mono whitespace-pre-wrap">
                   {JSON.stringify(log.metadata, null, 2)}
                 </pre>
