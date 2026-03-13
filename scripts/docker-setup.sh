@@ -19,15 +19,44 @@ if [ ! -f .env ]; then
         sed -i "s|ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$ENCRYPTION_KEY|" .env
     fi
     
-    echo "⚠️  Please update .env with your Clerk keys:"
-    echo "   - CLERK_PUBLISHABLE_KEY"
-    echo "   - CLERK_SECRET_KEY"
-    echo "   - VITE_CLERK_PUBLISHABLE_KEY"
     echo ""
-    echo "Get them from: https://dashboard.clerk.com"
+    echo "⚠️  REQUIRED: Update .env with your Clerk keys before continuing:"
+    echo ""
+    echo "   1. Go to https://dashboard.clerk.com"
+    echo "   2. Create a new application (or use existing)"
+    echo "   3. Copy these keys to .env file:"
+    echo "      - CLERK_PUBLISHABLE_KEY=pk_test_..."
+    echo "      - CLERK_SECRET_KEY=sk_test_..."
+    echo "      - VITE_CLERK_PUBLISHABLE_KEY=pk_test_..."
+    echo ""
+    echo "   Note: CLERK_PUBLISHABLE_KEY and VITE_CLERK_PUBLISHABLE_KEY should be the same"
     echo ""
     read -p "Press Enter after updating .env file..."
 fi
+
+# Validate required environment variables
+echo "🔍 Validating environment variables..."
+source .env
+
+if [[ "$CLERK_PUBLISHABLE_KEY" == "pk_test_your_key_here" ]] || [[ -z "$CLERK_PUBLISHABLE_KEY" ]]; then
+    echo "❌ Error: CLERK_PUBLISHABLE_KEY not set in .env"
+    echo "   Get it from: https://dashboard.clerk.com"
+    exit 1
+fi
+
+if [[ "$CLERK_SECRET_KEY" == "sk_test_your_key_here" ]] || [[ -z "$CLERK_SECRET_KEY" ]]; then
+    echo "❌ Error: CLERK_SECRET_KEY not set in .env"
+    echo "   Get it from: https://dashboard.clerk.com"
+    exit 1
+fi
+
+if [[ "$VITE_CLERK_PUBLISHABLE_KEY" == "pk_test_your_key_here" ]] || [[ -z "$VITE_CLERK_PUBLISHABLE_KEY" ]]; then
+    echo "❌ Error: VITE_CLERK_PUBLISHABLE_KEY not set in .env"
+    echo "   Get it from: https://dashboard.clerk.com"
+    exit 1
+fi
+
+echo "✅ Environment variables validated"
 
 # Build and start containers
 echo "🐳 Building Docker containers..."

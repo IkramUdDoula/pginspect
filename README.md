@@ -41,16 +41,20 @@ pgInspect is a modern, self-hosted PostgreSQL database management tool that prov
 git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 
-# 2. Run setup script
+# 2. Get Clerk keys from https://dashboard.clerk.com
+#    - Create a new application
+#    - Copy: CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY
+
+# 3. Run setup script (will prompt for Clerk keys)
 bash scripts/docker-setup.sh     # Linux/Mac
 .\scripts\docker-setup.ps1       # Windows
 
-# 3. Update .env with Clerk keys (get from https://dashboard.clerk.com)
 # 4. Access at http://localhost:3000
 ```
 
 The script automatically:
-- Creates `.env` with generated encryption key
+- Creates `.env` with auto-generated encryption key
+- Validates required Clerk authentication keys
 - Builds Docker images
 - Starts PostgreSQL database
 - Applies database schema
