@@ -114,6 +114,7 @@ export interface SavedView {
   description?: string;
   queryText: string;
   queryType: 'sql' | 'visual';
+  autoRefreshInterval?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,13 +126,7 @@ export interface CreateViewRequest {
   description?: string;
   queryText: string;
   queryType: 'sql' | 'visual';
-}
-
-export interface UpdateViewRequest {
-  viewName?: string;
-  description?: string;
-  queryText?: string;
-  queryType?: 'sql' | 'visual';
+  autoRefreshInterval?: number;
 }
 
 export interface ViewExecutionRequest {
@@ -220,4 +215,14 @@ export interface CreateAuditLogRequest {
   status: AuditStatus;
   errorMessage?: string;
   metadata?: Record<string, any>;
+// Column filtering types
+export type FilterOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'between' | 'in' | 'contains';
+export type FilterType = 'text' | 'number' | 'boolean' | 'date' | 'enum';
+
+export interface ColumnFilter {
+  column: string;
+  type: FilterType;
+  operator: FilterOperator;
+  value: string | number | boolean | string[] | [number, number] | [Date, Date] | null;
+  includeNull: boolean;
 }

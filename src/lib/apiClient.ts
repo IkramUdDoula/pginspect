@@ -10,7 +10,6 @@ import type {
   QueryExplainRequest,
   SavedView,
   CreateViewRequest,
-  UpdateViewRequest,
   ViewListResponse,
 } from '@/shared/types';
 
@@ -238,16 +237,16 @@ class ApiClient {
     return response;
   }
 
-  async updateView(viewId: string, updates: UpdateViewRequest): Promise<ApiResponse<{ view: SavedView }>> {
-    return this.request(`/api/views/${viewId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
   async deleteView(viewId: string): Promise<ApiResponse<void>> {
     return this.request(`/api/views/${viewId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateView(viewId: string, updateData: Partial<CreateViewRequest>): Promise<ApiResponse<{ view: SavedView }>> {
+    return this.request(`/api/views/${viewId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
     });
   }
 

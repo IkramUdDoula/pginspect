@@ -73,6 +73,9 @@ CREATE INDEX IF NOT EXISTS idx_saved_views_connection_id ON saved_views(connecti
 CREATE INDEX IF NOT EXISTS idx_saved_views_updated_at ON saved_views(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_saved_views_user_connection ON saved_views(user_id, connection_id);
 
+-- Comment on auto_refresh_interval column
+COMMENT ON COLUMN saved_views.auto_refresh_interval IS 'Auto-refresh interval in milliseconds. 0 = disabled';
+
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
