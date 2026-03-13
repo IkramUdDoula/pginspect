@@ -84,17 +84,6 @@ npm run dev
 
 Access at http://localhost:8080
 
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[Docker Guide](DOCKER.md)** | Docker deployment (production & development) |
-| **[Setup Guide](docs/SETUP.md)** | Get Clerk authentication keys |
-| **[Deployment Guide](docs/DEPLOYMENT.md)** | Detailed deployment instructions |
-| **[Features Guide](docs/FEATURES.md)** | Visual Query Builder, Saved Views, and more |
-| **[Connections Guide](docs/CONNECTIONS.md)** | Connect to local, Docker, and cloud databases |
-| **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues and solutions |
-
 ## 🛠 Tech Stack
 
 **Frontend:** React 18 • TypeScript • Vite • TailwindCSS • shadcn/ui  
