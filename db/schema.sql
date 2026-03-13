@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS saved_views (
   description TEXT,
   query_text TEXT NOT NULL,
   query_type VARCHAR(20) NOT NULL CHECK (query_type IN ('sql', 'visual')),
+  auto_refresh_interval INTEGER DEFAULT 0,  -- Auto-refresh interval in milliseconds, 0 = disabled
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -71,6 +72,9 @@ CREATE INDEX IF NOT EXISTS idx_saved_views_user_id ON saved_views(user_id);
 CREATE INDEX IF NOT EXISTS idx_saved_views_connection_id ON saved_views(connection_id);
 CREATE INDEX IF NOT EXISTS idx_saved_views_updated_at ON saved_views(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_saved_views_user_connection ON saved_views(user_id, connection_id);
+
+-- Comment on auto_refresh_interval column
+COMMENT ON COLUMN saved_views.auto_refresh_interval IS 'Auto-refresh interval in milliseconds. 0 = disabled';
 
 -- ============================================================================
 -- FUNCTIONS

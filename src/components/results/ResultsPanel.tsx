@@ -1,16 +1,42 @@
-import { useState } from "react";
-import { Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Download, ChevronLeft, ChevronRight, X, Save } from "lucide-react";
 import { useConnection } from "@/contexts/ConnectionContext";
 import { useViews } from "@/contexts/ViewContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SaveViewDialog } from "@/components/editor/SaveViewDialog";
+import { ColumnFilter } from "./ColumnFilter";
+import { applyFilters, formatFilterDescription } from "@/lib/filterHelpers";
+import type { ColumnFilter as ColumnFilterType } from "@/shared/types";
 
 export function ResultsPanel() {
   const { queryResult, setEditingRecord, setIsInspectorOpen } = useConnection();
-  const { viewResults, isViewMode } = useViews();
+  const { viewResults, isViewMode, currentView } = useViews();
   const [page, setPage] = useState(0);
+  const [columnFilters, setColumnFilters] = useState<Map<string, ColumnFilterType>>(new Map());
+  const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
 
   // Use view results if in view mode, otherwise use regular query results
   const currentResult = isViewMode ? viewResults : queryResult;
+
+  // Apply filters to rows
+  const filteredRows = useMemo(() => {
+    if (!currentResult || columnFilters.size === 0) {
+      return currentResult?.rows || [];
+    }
+    return applyFilters(currentResult.rows, columnFilters);
+  }, [currentResult, columnFilters]);
+
+  // Reset filters when result changes
+  useEffect(() => {
+    setColumnFilters(new Map());
+    setPage(0);
+  }, [currentResult]);
+
+  // Reset page when filters change
+  const handleFilterChange = () => {
+    setPage(0);
+  };
 
   if (!currentResult) {
     return (
@@ -21,12 +47,44 @@ export function ResultsPanel() {
   }
 
   const pageSize = 50;
-  const totalPages = Math.ceil(currentResult.rows.length / pageSize);
-  const pageRows = currentResult.rows.slice(page * pageSize, (page + 1) * pageSize);
+  const totalPages = Math.ceil(filteredRows.length / pageSize);
+  const pageRows = filteredRows.slice(page * pageSize, (page + 1) * pageSize);
+
+  const handleApplyFilter = (filter: ColumnFilterType) => {
+    setColumnFilters(prev => {
+      const next = new Map(prev);
+      next.set(filter.column, filter);
+      return next;
+    });
+    handleFilterChange();
+  };
+
+  const handleClearFilter = (columnName: string) => {
+    setColumnFilters(prev => {
+      const next = new Map(prev);
+      next.delete(columnName);
+      return next;
+    });
+    handleFilterChange();
+  };
+
+  const handleClearAllFilters = () => {
+    setColumnFilters(new Map());
+    handleFilterChange();
+  };
+
+  const handleRowClick = (row: Record<string, unknown>) => {
+    if (!isViewMode) {
+      setEditingRecord(row);
+    } else {
+      setEditingRecord(row);
+    }
+    setIsInspectorOpen(true);
+  };
 
   const exportCSV = () => {
     const header = currentResult.columns.join(",");
-    const rows = currentResult.rows.map((r) => currentResult.columns.map((c) => JSON.stringify(r[c] ?? "")).join(","));
+    const rows = filteredRows.map((r) => currentResult.columns.map((c) => JSON.stringify(r[c] ?? "")).join(","));
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -45,19 +103,61 @@ export function ResultsPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <>
+    <div className="flex flex-col h-full" data-results-panel>
       {/* Status bar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border text-xs text-muted-foreground">
-        <span>
-          {currentResult.rowCount} rows{currentResult.isSimulated ? " · simulated" : ""} · {currentResult.executionTime}ms
-          {isViewMode && viewResults?.view && (
-            <span className="ml-2 text-primary">· {viewResults.view.name}</span>
+        <div className="flex items-center gap-2 flex-1">
+          <span>
+            {filteredRows.length} {columnFilters.size > 0 && `of ${currentResult.rowCount}`} rows
+            {currentResult.isSimulated ? " · simulated" : ""} · {currentResult.executionTime}ms
+            {isViewMode && viewResults?.view && (
+              <span className="ml-2 text-primary">· {viewResults.view.name}</span>
+            )}
+          </span>
+          {columnFilters.size > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearAllFilters}
+              className="h-5 px-2 text-[10px] text-muted-foreground"
+            >
+              Clear all filters
+            </Button>
           )}
-        </span>
+          {columnFilters.size > 0 && !isViewMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSaveViewDialog(true)}
+              className="h-5 px-2 text-[10px] text-primary"
+            >
+              <Save className="h-3 w-3 mr-1" /> Save Filtered View
+            </Button>
+          )}
+        </div>
         <Button variant="ghost" size="sm" onClick={exportCSV} className="h-6 px-2 text-[10px] text-muted-foreground">
           <Download className="h-3 w-3 mr-1" /> CSV
         </Button>
       </div>
+
+      {/* Active filters */}
+      {columnFilters.size > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border flex-wrap">
+          {Array.from(columnFilters.entries()).map(([column, filter]) => (
+            <Badge key={column} variant="secondary" className="text-[10px] gap-1">
+              <span className="font-mono">{column}:</span>
+              <span>{formatFilterDescription(filter)}</span>
+              <button
+                onClick={() => handleClearFilter(column)}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <div className="flex-1 overflow-auto scrollbar-thin">
@@ -67,7 +167,17 @@ export function ResultsPanel() {
               <th className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border w-10">#</th>
               {currentResult.columns.map((col) => (
                 <th key={col} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border whitespace-nowrap">
-                  <span className="font-mono">{col}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono">{col}</span>
+                    <ColumnFilter
+                      columnName={col}
+                      columnType="text"
+                      rows={currentResult.rows}
+                      currentFilter={columnFilters.get(col)}
+                      onApplyFilter={handleApplyFilter}
+                      onClearFilter={() => handleClearFilter(col)}
+                    />
+                  </div>
                 </th>
               ))}
             </tr>
@@ -77,7 +187,7 @@ export function ResultsPanel() {
               <tr key={i} className="hover:bg-surface-hover transition-colors border-b border-border/50">
                 <td
                   className="px-3 py-1.5 text-muted-foreground font-mono cursor-pointer hover:text-primary hover:bg-primary/5 transition-colors"
-                  onClick={() => { setEditingRecord(row); setIsInspectorOpen(true); }}
+                  onClick={() => handleRowClick(row)}
                 >
                   {page * pageSize + i + 1}
                 </td>
@@ -109,5 +219,13 @@ export function ResultsPanel() {
         </div>
       )}
     </div>
+
+    {/* Save View Dialog */}
+    <SaveViewDialog 
+      open={showSaveViewDialog} 
+      onOpenChange={setShowSaveViewDialog}
+      filters={columnFilters}
+    />
+    </>
   );
 }

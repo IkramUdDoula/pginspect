@@ -103,26 +103,42 @@
 }
 
 @layer utilities {
+  /* Custom scrollbar - dark theme */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(0 0% 20%) transparent;
+    scrollbar-color: hsl(0 0% 16%) transparent;
   }
+  
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+  
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
+  
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(0 0% 20%);
+    background: hsl(0 0% 16%);
     border-radius: 3px;
+    transition: background-color 0.2s ease;
   }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(38 30% 12%); /* --surface-hover */
+  }
+  
+  /* Custom scrollbar - light theme */
   .light .scrollbar-thin {
-    scrollbar-color: hsl(0 0% 80%) transparent;
+    scrollbar-color: hsl(0 0% 88%) transparent;
   }
+  
   .light .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(0 0% 80%);
+    background: hsl(0 0% 88%);
+  }
+  
+  .light .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(38 30% 93%); /* --surface-hover */
   }
 }
 

@@ -1,7 +1,7 @@
 // Views list component for the sidebar
 
 import { useState } from 'react';
-import { Eye, MoreVertical, Edit, Trash2, RefreshCw } from 'lucide-react';
+import { Eye, MoreVertical, Trash2, RefreshCw } from 'lucide-react';
 import { useViews } from '@/contexts/ViewContext';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { toast } from 'sonner';
@@ -21,18 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import type { SavedView } from '@/shared/types';
 
 interface ViewsListProps {
@@ -40,12 +29,9 @@ interface ViewsListProps {
 }
 
 export function ViewsList({ collapsed }: ViewsListProps) {
-  const { views, isLoading, executeView, deleteView, updateView, loadViews } = useViews();
+  const { views, isLoading, executeView, deleteView, loadViews } = useViews();
   const { activeConnection } = useConnection();
   const [deleteDialogView, setDeleteDialogView] = useState<SavedView | null>(null);
-  const [renameDialogView, setRenameDialogView] = useState<SavedView | null>(null);
-  const [newViewName, setNewViewName] = useState('');
-  const [newViewDescription, setNewViewDescription] = useState('');
 
   const handleViewClick = async (view: SavedView) => {
     try {
@@ -73,29 +59,6 @@ export function ViewsList({ collapsed }: ViewsListProps) {
     }
   };
 
-  const handleRename = async () => {
-    if (!renameDialogView || !newViewName.trim()) {
-      toast.error('View name is required');
-      return;
-    }
-
-    try {
-      const updated = await updateView(renameDialogView.id, {
-        viewName: newViewName.trim(),
-        description: newViewDescription.trim() || undefined,
-      });
-
-      if (updated) {
-        toast.success('View renamed successfully');
-        setRenameDialogView(null);
-        setNewViewName('');
-        setNewViewDescription('');
-      }
-    } catch (error) {
-      toast.error('Failed to rename view');
-    }
-  };
-
   const handleDelete = async () => {
     if (!deleteDialogView) return;
 
@@ -108,12 +71,6 @@ export function ViewsList({ collapsed }: ViewsListProps) {
     } catch (error) {
       toast.error('Failed to delete view');
     }
-  };
-
-  const openRenameDialog = (view: SavedView) => {
-    setRenameDialogView(view);
-    setNewViewName(view.viewName);
-    setNewViewDescription(view.description || '');
   };
 
   if (collapsed) {
@@ -190,10 +147,6 @@ export function ViewsList({ collapsed }: ViewsListProps) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={() => openRenameDialog(view)}>
-                  <Edit className="h-3.5 w-3.5 mr-2" />
-                  Rename
-                </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setDeleteDialogView(view)}
                   className="text-destructive focus:text-destructive"
@@ -206,55 +159,6 @@ export function ViewsList({ collapsed }: ViewsListProps) {
           </div>
         ))}
       </div>
-
-      {/* Rename Dialog */}
-      <Dialog open={!!renameDialogView} onOpenChange={() => setRenameDialogView(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename View</DialogTitle>
-            <DialogDescription>
-              Update the name and description for this view
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="view-name" className="text-sm font-medium">
-                View Name
-              </Label>
-              <Input
-                id="view-name"
-                value={newViewName}
-                onChange={(e) => setNewViewName(e.target.value)}
-                placeholder="Enter view name"
-                className="font-mono"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="view-description" className="text-sm font-medium">
-                Description (optional)
-              </Label>
-              <Textarea
-                id="view-description"
-                value={newViewDescription}
-                onChange={(e) => setNewViewDescription(e.target.value)}
-                placeholder="Enter view description"
-                className="min-h-[80px] resize-none"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialogView(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRename}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteDialogView} onOpenChange={() => setDeleteDialogView(null)}>

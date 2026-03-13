@@ -27,4 +27,21 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split Monaco Editor into separate chunk
+          'monaco': ['@monaco-editor/react'],
+          // Split html2canvas into separate chunk
+          'html2canvas': ['html2canvas'],
+          // Split React and related libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Split UI components
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-popover'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1000 KB
+  },
 }));

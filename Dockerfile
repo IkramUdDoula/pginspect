@@ -32,14 +32,16 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install production dependencies only
+# Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install ALL dependencies (tsx is needed for production)
+RUN npm ci
 
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/dist ./dist
 
-# Copy backend source
+# Copy backend source (includes all subdirectories: routes, services, middleware, utils)
 COPY src/server ./src/server
 COPY src/shared ./src/shared
 COPY src/lib ./src/lib

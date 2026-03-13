@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { apiClient } from '@/lib/apiClient';
 import { useConnection } from './ConnectionContext';
-import type { SavedView, CreateViewRequest, UpdateViewRequest, QueryResult } from '@/shared/types';
+import type { SavedView, CreateViewRequest, QueryResult } from '@/shared/types';
 
 interface ViewState {
   views: SavedView[];
@@ -20,7 +20,6 @@ type ViewAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_VIEWS'; payload: SavedView[] }
   | { type: 'ADD_VIEW'; payload: SavedView }
-  | { type: 'UPDATE_VIEW'; payload: SavedView }
   | { type: 'REMOVE_VIEW'; payload: string }
   | { type: 'SET_CURRENT_VIEW'; payload: SavedView | null }
   | { type: 'SET_VIEW_RESULTS'; payload: ViewState['viewResults'] }
@@ -48,14 +47,6 @@ function viewReducer(state: ViewState, action: ViewAction): ViewState {
       return { ...state, views: action.payload, isLoading: false, error: null };
     case 'ADD_VIEW':
       return { ...state, views: [action.payload, ...state.views] };
-    case 'UPDATE_VIEW':
-      return {
-        ...state,
-        views: state.views.map(view => 
-          view.id === action.payload.id ? action.payload : view
-        ),
-        currentView: state.currentView?.id === action.payload.id ? action.payload : state.currentView,
-      };
     case 'REMOVE_VIEW':
       return {
         ...state,
@@ -82,12 +73,11 @@ function viewReducer(state: ViewState, action: ViewAction): ViewState {
 interface ViewContextType extends ViewState {
   loadViews: (connectionId: number) => Promise<void>;
   createView: (viewData: CreateViewRequest) => Promise<SavedView | null>;
-  updateView: (viewId: string, updates: UpdateViewRequest) => Promise<SavedView | null>;
   deleteView: (viewId: string) => Promise<boolean>;
   executeView: (viewId: string) => Promise<void>;
   refreshCurrentView: () => Promise<void>;
   exitViewMode: () => void;
-  setAutoRefresh: (interval: number) => void;
+  setAutoRefresh: (interval: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -179,26 +169,6 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const updateView = useCallback(async (viewId: string, updates: UpdateViewRequest): Promise<SavedView | null> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    
-    try {
-      const response = await apiClient.updateView(viewId, updates);
-      
-      if (response.success && response.data) {
-        dispatch({ type: 'UPDATE_VIEW', payload: response.data.view });
-        dispatch({ type: 'SET_LOADING', payload: false });
-        return response.data.view;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to update view' });
-        return null;
-      }
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to update view' });
-      return null;
-    }
-  }, []);
-
   const deleteView = useCallback(async (viewId: string): Promise<boolean> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
@@ -232,7 +202,8 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SET_CURRENT_VIEW', payload: view });
           dispatch({ type: 'SET_VIEW_RESULTS', payload: response.data });
           dispatch({ type: 'SET_VIEW_MODE', payload: true });
-          dispatch({ type: 'SET_AUTO_REFRESH', payload: 0 }); // Reset auto-refresh
+          // Load saved auto-refresh interval
+          dispatch({ type: 'SET_AUTO_REFRESH', payload: view.autoRefreshInterval || 0 });
         }
         dispatch({ type: 'SET_LOADING', payload: false });
       } else {
@@ -266,9 +237,32 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_AUTO_REFRESH', payload: 0 });
   }, []);
 
-  const setAutoRefresh = useCallback((interval: number) => {
+  const setAutoRefresh = useCallback(async (interval: number) => {
     dispatch({ type: 'SET_AUTO_REFRESH', payload: interval });
-  }, []);
+    
+    // Persist to database if we have a current view
+    if (state.currentView) {
+      try {
+        await apiClient.updateView(state.currentView.id, { autoRefreshInterval: interval });
+        
+        // Update the view in our local state
+        const updatedViews = state.views.map(v => 
+          v.id === state.currentView?.id 
+            ? { ...v, autoRefreshInterval: interval }
+            : v
+        );
+        dispatch({ type: 'SET_VIEWS', payload: updatedViews });
+        
+        // Update current view
+        if (state.currentView) {
+          dispatch({ type: 'SET_CURRENT_VIEW', payload: { ...state.currentView, autoRefreshInterval: interval } });
+        }
+      } catch (error) {
+        console.error('Failed to persist auto-refresh interval:', error);
+        // Still keep the local state change even if persistence fails
+      }
+    }
+  }, [state.currentView, state.views]);
 
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
@@ -278,7 +272,6 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
     ...state,
     loadViews,
     createView,
-    updateView,
     deleteView,
     executeView,
     refreshCurrentView,
