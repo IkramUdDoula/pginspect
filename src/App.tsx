@@ -11,6 +11,8 @@ import { setAuthTokenProvider } from "@/lib/apiClient";
 import { SignIn } from "@/components/auth/SignIn";
 import { SignUp } from "@/components/auth/SignUp";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -165,6 +167,8 @@ const App = () => (
           <AuthTokenProvider>
             <Toaster />
             <Sonner />
+            <OfflineIndicator />
+            <InstallPrompt />
             <BrowserRouter>
               <Routes>
                 {/* Public routes */}

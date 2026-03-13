@@ -1,0 +1,35 @@
+<svg width="750" height="1334" viewBox="0 0 750 1334" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="750" height="1334" fill="#0a0a0a"/>
+  
+  <!-- Top Bar -->
+  <rect width="750" height="60" fill="#18181b"/>
+  
+  <!-- Logo and Title -->
+  <circle cx="30" cy="30" r="16" fill="#f59e0b"/>
+  <text x="60" y="38" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#fafafa">pgInspect</text>
+  
+  <!-- Content Cards -->
+  <rect x="20" y="80" width="710" height="200" rx="12" fill="#18181b"/>
+  <rect x="20" y="300" width="710" height="200" rx="12" fill="#18181b"/>
+  <rect x="20" y="520" width="710" height="200" rx="12" fill="#18181b"/>
+  
+  <!-- List Items -->
+  <rect x="20" y="740" width="710" height="80" rx="8" fill="#18181b"/>
+  <rect x="20" y="840" width="710" height="80" rx="8" fill="#18181b"/>
+  <rect x="20" y="940" width="710" height="80" rx="8" fill="#18181b"/>
+  <rect x="20" y="1040" width="710" height="80" rx="8" fill="#18181b"/>
+  <rect x="20" y="1140" width="710" height="80" rx="8" fill="#18181b"/>
+  
+  <!-- Status Indicators -->
+  <circle cx="50" cy="780" r="8" fill="#22c55e"/>
+  <circle cx="50" cy="880" r="8" fill="#22c55e"/>
+  <circle cx="50" cy="980" r="8" fill="#ef4444"/>
+  <circle cx="50" cy="1080" r="8" fill="#22c55e"/>
+  <circle cx="50" cy="1180" r="8" fill="#22c55e"/>
+  
+  <!-- Title Text -->
+  <text x="375" y="400" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#fafafa" text-anchor="middle">pgInspect</text>
+  <text x="375" y="440" font-family="Arial, sans-serif" font-size="18" fill="#a1a1aa" text-anchor="middle">Database Manager</text>
+  <text x="375" y="470" font-family="Arial, sans-serif" font-size="16" fill="#a1a1aa" text-anchor="middle">for PostgreSQL</text>
+</svg>

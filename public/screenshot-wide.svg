@@ -1,0 +1,44 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1280" height="720" fill="#0a0a0a"/>
+  
+  <!-- Top Bar -->
+  <rect width="1280" height="48" fill="#18181b"/>
+  
+  <!-- Logo and Title -->
+  <circle cx="24" cy="24" r="12" fill="#f59e0b"/>
+  <text x="48" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#fafafa">pgInspect</text>
+  
+  <!-- Sidebar -->
+  <rect x="0" y="48" width="240" height="672" fill="#18181b"/>
+  
+  <!-- Main Content Area -->
+  <rect x="240" y="48" width="1040" height="672" fill="#0a0a0a"/>
+  
+  <!-- Content Cards -->
+  <rect x="260" y="68" width="320" height="180" rx="8" fill="#18181b"/>
+  <rect x="600" y="68" width="320" height="180" rx="8" fill="#18181b"/>
+  <rect x="940" y="68" width="320" height="180" rx="8" fill="#18181b"/>
+  
+  <!-- Table -->
+  <rect x="260" y="268" width="1000" height="400" rx="8" fill="#18181b"/>
+  <rect x="260" y="268" width="1000" height="40" rx="8" fill="#27272a"/>
+  
+  <!-- Table Rows -->
+  <rect x="280" y="328" width="960" height="30" fill="#18181b"/>
+  <rect x="280" y="368" width="960" height="30" fill="#0a0a0a"/>
+  <rect x="280" y="408" width="960" height="30" fill="#18181b"/>
+  <rect x="280" y="448" width="960" height="30" fill="#0a0a0a"/>
+  <rect x="280" y="488" width="960" height="30" fill="#18181b"/>
+  
+  <!-- Accent Elements -->
+  <circle cx="290" cy="343" r="6" fill="#22c55e"/>
+  <circle cx="290" cy="383" r="6" fill="#22c55e"/>
+  <circle cx="290" cy="423" r="6" fill="#ef4444"/>
+  <circle cx="290" cy="463" r="6" fill="#22c55e"/>
+  <circle cx="290" cy="503" r="6" fill="#22c55e"/>
+  
+  <!-- Title Text -->
+  <text x="640" y="360" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#fafafa" text-anchor="middle">PostgreSQL Database Manager</text>
+  <text x="640" y="390" font-family="Arial, sans-serif" font-size="16" fill="#a1a1aa" text-anchor="middle">Visual Query Builder • SQL Editor • Audit Logs</text>
+</svg>

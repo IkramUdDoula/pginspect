@@ -293,6 +293,53 @@ class ApiClient {
       body: JSON.stringify({ connectionId, schema, table, where }),
     });
   }
+
+  // Audit logs
+  async getAuditLogs(filters?: import('../shared/types').AuditLogFilter): Promise<ApiResponse<{ logs: import('../shared/types').AuditLog[]; total: number }>> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      if (filters.actionCategory) params.append('actionCategory', filters.actionCategory);
+      if (filters.actionType) params.append('actionType', filters.actionType);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.connectionId) params.append('connectionId', filters.connectionId.toString());
+      if (filters.databaseName) params.append('databaseName', filters.databaseName);
+      if (filters.tableName) params.append('tableName', filters.tableName);
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom.toISOString());
+      if (filters.dateTo) params.append('dateTo', filters.dateTo.toISOString());
+      if (filters.searchQuery) params.append('searchQuery', filters.searchQuery);
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.offset) params.append('offset', filters.offset.toString());
+    }
+
+    const queryString = params.toString();
+    return this.request(`/api/audit/logs${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAuditLog(id: string): Promise<ApiResponse<{ log: import('../shared/types').AuditLog }>> {
+    return this.request(`/api/audit/logs/${id}`);
+  }
+
+  async getAuditStats(): Promise<ApiResponse<import('../shared/types').AuditLogStats>> {
+    return this.request('/api/audit/stats');
+  }
+
+  async exportAuditLogs(filters?: import('../shared/types').AuditLogFilter, format: 'csv' | 'json' = 'json'): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/audit/export`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await (getAuthToken ? getAuthToken() : null)}`,
+      },
+      body: JSON.stringify({ filters, format }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to export audit logs');
+    }
+
+    return response.blob();
+  }
 }
 
 export const apiClient = new ApiClient();

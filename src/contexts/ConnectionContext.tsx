@@ -31,6 +31,7 @@ interface ConnectionContextType {
   
   isInspectorOpen: boolean;
   showDashboard: boolean;
+  showAudit: boolean;
   isConnectionManagerOpen: boolean;
   editingRecord: Record<string, unknown> | null;
   creatingRecord: boolean;
@@ -47,6 +48,7 @@ interface ConnectionContextType {
   
   setIsInspectorOpen: (open: boolean) => void;
   setShowDashboard: (show: boolean) => void;
+  setShowAudit: (show: boolean) => void;
   setIsConnectionManagerOpen: (open: boolean) => void;
   setEditingRecord: (record: Record<string, unknown> | null) => void;
   setCreatingRecord: (creating: boolean) => void;
@@ -79,6 +81,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [showDashboard, setShowDashboard] = useState(true); // Start with dashboard visible
+  const [showAudit, setShowAudit] = useState(false);
   const [isConnectionManagerOpen, setIsConnectionManagerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record<string, unknown> | null>(null);
   const [creatingRecord, setCreatingRecord] = useState(false);
@@ -571,10 +574,10 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       value={{
         connections, activeConnection, schemaState, activeSchema, selectedTable,
         queryBlocks, sqlText, queryResult, editorMode, isLoading, isInspectorOpen,
-        showDashboard, isConnectionManagerOpen, editingRecord, creatingRecord, isInitialLoad, addConnection, setActiveConnection,
+        showDashboard, showAudit, isConnectionManagerOpen, editingRecord, creatingRecord, isInitialLoad, addConnection, setActiveConnection,
         removeConnection, setActiveSchema, setSelectedTable, setQueryBlocks,
         setSqlText, setQueryResult, setEditorMode, setIsInspectorOpen,
-        setShowDashboard, setIsConnectionManagerOpen, setEditingRecord, setCreatingRecord, runQuery, currentTables,
+        setShowDashboard, setShowAudit, setIsConnectionManagerOpen, setEditingRecord, setCreatingRecord, runQuery, currentTables,
       }}
     >
       {children}

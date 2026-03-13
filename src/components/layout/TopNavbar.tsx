@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Database, ChevronDown, Plus, Check, Sun, Moon, LayoutDashboard } from "lucide-react";
+import { Database, ChevronDown, Plus, Check, Sun, Moon, LayoutDashboard, ScrollText } from "lucide-react";
 import { useConnection } from "@/contexts/ConnectionContext";
 import { UserButton } from "@/components/auth/UserButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "@/hooks/use-theme";
 
 export function TopNavbar() {
-  const { activeConnection, connections, setActiveConnection, setIsConnectionManagerOpen, activeSchema, setActiveSchema, schemaState, setShowDashboard, showDashboard, setSelectedTable } = useConnection();
+  const { activeConnection, connections, setActiveConnection, setIsConnectionManagerOpen, activeSchema, setActiveSchema, schemaState, setShowDashboard, setShowAudit, showDashboard, showAudit, setSelectedTable } = useConnection();
   const [connDropdown, setConnDropdown] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -22,11 +22,20 @@ export function TopNavbar() {
       <div className="flex items-center gap-2">
         {/* Dashboard button */}
         <button
-          onClick={() => { setShowDashboard(true); setSelectedTable(null); }}
+          onClick={() => { setShowDashboard(true); setShowAudit(false); setSelectedTable(null); }}
           className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${showDashboard ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
           title="Dashboard"
         >
           <LayoutDashboard className="h-4 w-4" />
+        </button>
+
+        {/* Audit Log button */}
+        <button
+          onClick={() => { setShowAudit(true); setShowDashboard(false); setSelectedTable(null); }}
+          className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${showAudit ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
+          title="Audit Logs"
+        >
+          <ScrollText className="h-4 w-4" />
         </button>
 
         {/* Theme toggle */}
@@ -38,8 +47,8 @@ export function TopNavbar() {
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
 
-        {/* Connection selector - only show when not on dashboard */}
-        {activeConnection && !showDashboard && (
+        {/* Connection selector - only show when not on dashboard or audit */}
+        {activeConnection && !showDashboard && !showAudit && (
           <div className="relative">
             <button onClick={() => setConnDropdown(!connDropdown)} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary hover:bg-surface-hover text-sm transition-colors">
               <div className={`w-2 h-2 rounded-full ${activeConnection.status === "connected" ? "bg-green-500" : activeConnection.status === "error" ? "bg-red-500" : "bg-blue-500"}`} />
@@ -71,8 +80,8 @@ export function TopNavbar() {
           </div>
         )}
 
-        {/* Schema selector - only show when not on dashboard */}
-        {schemaState && !showDashboard && (
+        {/* Schema selector - only show when not on dashboard or audit */}
+        {schemaState && !showDashboard && !showAudit && (
           <Select value={activeSchema} onValueChange={setActiveSchema}>
             <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs font-mono bg-secondary border-none">
               <SelectValue />
