@@ -34,43 +34,47 @@ pgInspect is a modern, self-hosted PostgreSQL database management tool that prov
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended)
+### Docker Deployment (Recommended)
 
 ```bash
-# 1. Clone the repository
+# 1. Clone and navigate
 git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 
-# 2. Setup environment
-cp .env.example .env
-# Edit .env with your Clerk keys
+# 2. Run setup script
+bash scripts/docker-setup.sh     # Linux/Mac
+.\scripts\docker-setup.ps1       # Windows
 
-# 3. Start with Docker
-docker-compose up -d
-
-# Or use the setup script
-bash scripts/docker-setup.sh  # Linux/Mac
-# OR
-.\scripts\docker-setup.ps1    # Windows
+# 3. Update .env with Clerk keys (get from https://dashboard.clerk.com)
+# 4. Access at http://localhost:3000
 ```
 
-Access at http://localhost:3000
+The script automatically:
+- Creates `.env` with generated encryption key
+- Builds Docker images
+- Starts PostgreSQL database
+- Applies database schema
+- Starts the application
 
-### Option 2: Local Development
+### Local Development
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone https://github.com/ikramuddoula/pginspect
 cd pginspect
 
 # 2. Install dependencies
 npm install
 
-# 3. Configure environment
+# 3. Setup environment
 cp .env.example .env
-# Edit .env with your Clerk keys and database URL
+# Edit .env with Clerk keys and database URL
 
-# 4. Start the application
+# 4. Setup database
+createdb pgadmin
+psql -d pgadmin -f db/schema.sql
+
+# 5. Start development server
 npm run dev
 ```
 
@@ -104,27 +108,62 @@ Access at http://localhost:8080
 - JWT token verification for all API requests
 - Connection pooling with timeouts and limits
 
-## 📊 Database Setup
+## 🗄️ Connect Your Database
 
-Set up your local PostgreSQL database:
+pgInspect works with any PostgreSQL database. Here's how to connect from popular providers:
 
-```bash
-# Create database
-createdb pgadmin
+### Railway
 
-# Run schema
-psql -d pgadmin -f db/schema.sql
+1. Go to your Railway project → PostgreSQL service
+2. Copy connection details from "Connect" tab
+3. Add to pgInspect:
+
+```
+Host:     centerbeam.proxy.rlwy.net
+Port:     56062
+Database: railway
+Username: postgres
+Password: [from Railway dashboard]
+SSL Mode: disable
 ```
 
-Then connect using:
+### Supabase
+
+1. Go to Project
+2. Press on the **Connect** button on the topbar
+2. Get the connection variables
+3. Add to pgInspect:
+
 ```
-Host:     localhost
+Host:     aws-0-ap-southeast-1.pooler.supabase.com
+Port:     6543
+Database: postgres
+Username: postgres.[project-ref]
+Password: [from Supabase dashboard]
+SSL Mode: require
+```
+
+### Local Docker (included in setup)
+
+After running the setup script, connect using:
+
+```
+Host:     localhost (or host.docker.internal from containers)
 Port:     5432
 Database: pgadmin
 Username: postgres
-Password: your_password
+Password: postgres
 SSL Mode: disable
 ```
+
+### Neon, Render, or Any PostgreSQL
+
+1. Get connection details from your provider
+2. Click "Add Connection" in pgInspect
+3. Enter host, port, database, username, password
+4. Choose SSL mode (usually "require" for cloud providers)
+
+All credentials are encrypted with AES-256-GCM before storage.
 
 ## 🤝 Contributing
 

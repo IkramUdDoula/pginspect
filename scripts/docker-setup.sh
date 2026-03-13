@@ -1,60 +1,63 @@
 #!/bin/bash
-
-# Docker Setup Script for pgInspect
-# This script helps you set up the Docker environment
-
 set -e
 
-echo "🐳 pgInspect Docker Setup"
-echo "========================="
-echo ""
-
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker first."
-    echo "   Visit: https://docs.docker.com/get-docker/"
-    exit 1
-fi
-
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
-    echo "   Visit: https://docs.docker.com/compose/install/"
-    exit 1
-fi
-
-echo "✅ Docker and Docker Compose are installed"
-echo ""
+echo "🚀 pgInspect Docker Setup"
+echo "=========================="
 
 # Check if .env exists
 if [ ! -f .env ]; then
-    echo "📝 Creating .env from template..."
+    echo "📝 Creating .env file..."
     cp .env.example .env
-    echo "✅ Created .env"
-    echo ""
-    echo "⚠️  IMPORTANT: Edit .env and update:"
+    
+    # Generate encryption key
+    ENCRYPTION_KEY=$(openssl rand -base64 32)
+    
+    # Update .env with generated key
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s|ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$ENCRYPTION_KEY|" .env
+    else
+        sed -i "s|ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$ENCRYPTION_KEY|" .env
+    fi
+    
+    echo "⚠️  Please update .env with your Clerk keys:"
     echo "   - CLERK_PUBLISHABLE_KEY"
     echo "   - CLERK_SECRET_KEY"
     echo "   - VITE_CLERK_PUBLISHABLE_KEY"
-    echo "   - ENCRYPTION_KEY (generate with: openssl rand -base64 32)"
     echo ""
-    read -p "Press Enter after updating .env..."
-else
-    echo "✅ .env already exists"
+    echo "Get them from: https://dashboard.clerk.com"
+    echo ""
+    read -p "Press Enter after updating .env file..."
 fi
 
-echo ""
-echo "🚀 Starting Docker deployment..."
+# Build and start containers
+echo "🐳 Building Docker containers..."
+docker-compose build
+
+echo "🚀 Starting services..."
 docker-compose up -d
 
+# Wait for database to be ready
+echo "⏳ Waiting for database to be ready..."
+sleep 10
+
+# Check health
+echo "🏥 Checking service health..."
+docker-compose ps
+
 echo ""
-echo "✅ Deployment started!"
+echo "✅ Setup complete!"
 echo ""
-echo "📍 Access your application:"
-echo "   Application: http://localhost:3000"
+echo "📍 Access pgInspect at: http://localhost:3000"
 echo ""
-echo "📊 Useful commands:"
+echo "📊 Database connection details:"
+echo "   Host: localhost"
+echo "   Port: 5432"
+echo "   Database: pgadmin"
+echo "   Username: postgres"
+echo "   Password: postgres"
+echo ""
+echo "🔧 Useful commands:"
 echo "   View logs:    docker-compose logs -f"
 echo "   Stop:         docker-compose down"
 echo "   Restart:      docker-compose restart"
-echo ""
+echo "   Rebuild:      docker-compose down && docker-compose build --no-cache && docker-compose up -d"
