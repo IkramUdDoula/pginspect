@@ -2,10 +2,12 @@ import { useConnection } from "@/contexts/ConnectionContext";
 import { Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { apiClient } from "@/lib/apiClient";
 
 export function Dashboard() {
   const { activeConnection, schemaState, setShowDashboard, setSelectedTable, currentTables, connections, setActiveConnection, removeConnection, setIsConnectionManagerOpen } = useConnection();
   const [connectionStats, setConnectionStats] = React.useState<Record<string, { tables: string | number; rows: string; size: string; schemas: string | number }>>({});
+  const [loadingStats, setLoadingStats] = React.useState<Set<string>>(new Set());
 
   console.log('[Dashboard] Rendering with:', {
     connectionsCount: connections.length,
@@ -13,6 +15,49 @@ export function Dashboard() {
     activeConnection: activeConnection?.name,
     schemaState: schemaState ? { schemas: schemaState.schemas, tableCount: Object.keys(schemaState.tables).length } : null
   });
+
+  // Fetch stats for all connected connections
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      const connectedConnections = connections.filter(c => c.status === 'connected' && c.id);
+      
+      for (const conn of connectedConnections) {
+        // Skip if already loading or already have stats
+        if (loadingStats.has(conn.name) || connectionStats[conn.name]) {
+          continue;
+        }
+
+        setLoadingStats(prev => new Set(prev).add(conn.name));
+
+        try {
+          const response = await apiClient.getConnectionStats(conn.id!);
+          
+          if (response.success && response.data) {
+            setConnectionStats(prev => ({
+              ...prev,
+              [conn.name]: {
+                tables: response.data.tables,
+                rows: formatRows(response.data.rows),
+                size: formatSize(response.data.sizeBytes / 1024), // Convert bytes to KB
+                schemas: response.data.schemas,
+              },
+            }));
+          }
+        } catch (error) {
+          console.error('[Dashboard] Failed to fetch stats for', conn.name, error);
+        } finally {
+          setLoadingStats(prev => {
+            const next = new Set(prev);
+            next.delete(conn.name);
+            return next;
+          });
+        }
+      }
+    };
+
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connections.map(c => `${c.name}-${c.status}-${c.id}`).join(',')]);
 
   // Open connection and navigate to editor
   const handleConnectionClick = async (conn: typeof connections[0]) => {
@@ -23,6 +68,17 @@ export function Dashboard() {
     
     // Navigate to editor
     setShowDashboard(false);
+  };
+
+  // Handle connection removal
+  const handleRemoveConnection = (connName: string) => {
+    removeConnection(connName);
+    // Clear stats for removed connection
+    setConnectionStats(prev => {
+      const next = { ...prev };
+      delete next[connName];
+      return next;
+    });
   };
 
   const formatSize = (kb: number) => {
@@ -105,7 +161,7 @@ export function Dashboard() {
                     <td className="px-3 py-3 text-right font-mono text-muted-foreground">{stats.schemas}</td>
                     <td className="px-3 py-3 text-right">
                       <button
-                        onClick={(e) => { e.stopPropagation(); removeConnection(conn.name); }}
+                        onClick={(e) => { e.stopPropagation(); handleRemoveConnection(conn.name); }}
                         className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         title="Remove connection"
                       >

@@ -156,6 +156,79 @@ connections.delete('/saved/:name', async (c) => {
   }
 });
 
+// Get connection statistics
+connections.get('/:id/stats', async (c) => {
+  try {
+    const auth = getAuth(c);
+    const connectionId = c.req.param('id');
+    
+    logger.info('Fetching connection stats', { userId: auth.userId, connectionId });
+    
+    // Get the active connection
+    const { getConnection } = await import('../services/db');
+    const sql = getConnection(connectionId);
+    
+    if (!sql) {
+      return c.json({
+        success: false,
+        error: 'Connection not found',
+      }, 404);
+    }
+
+    // Get all schemas
+    const schemasResult = await sql`
+      SELECT schema_name 
+      FROM information_schema.schemata 
+      WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+      ORDER BY schema_name
+    `;
+    const schemas = schemasResult.map(row => row.schema_name as string);
+
+    // Get aggregate stats across all schemas
+    let totalTables = 0;
+    let totalRows = 0;
+    let totalSize = 0;
+
+    for (const schema of schemas) {
+      const tablesResult = await sql`
+        SELECT 
+          COUNT(*) as table_count,
+          COALESCE(SUM(s.n_live_tup), 0) as total_rows,
+          COALESCE(SUM(pg_total_relation_size(quote_ident(t.table_schema)||'.'||quote_ident(t.table_name))), 0) as total_size
+        FROM information_schema.tables t
+        LEFT JOIN pg_stat_user_tables s ON s.schemaname = t.table_schema AND s.relname = t.table_name
+        WHERE t.table_schema = ${schema}
+          AND t.table_type = 'BASE TABLE'
+      `;
+
+      if (tablesResult.length > 0) {
+        totalTables += Number(tablesResult[0].table_count) || 0;
+        totalRows += Number(tablesResult[0].total_rows) || 0;
+        totalSize += Number(tablesResult[0].total_size) || 0;
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        schemas: schemas.length,
+        tables: totalTables,
+        rows: totalRows,
+        sizeBytes: totalSize,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get connection stats', error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get stats',
+      },
+      500
+    );
+  }
+});
+
 // Close active connection
 connections.delete('/:id', async (c) => {
   try {
@@ -179,3 +252,75 @@ connections.delete('/:id', async (c) => {
 });
 
 export default connections;
+
+// Get connection statistics
+connections.get('/:id/stats', async (c) => {
+  try {
+    const auth = getAuth(c);
+    const connectionId = c.req.param('id');
+
+    logger.info('Fetching connection stats', { userId: auth.userId, connectionId });
+
+    // Get the active connection
+    const { sql } = await import('../services/db').then(m => {
+      const conn = m.getConnection(connectionId);
+      if (!conn) {
+        throw new Error('Connection not found');
+      }
+      return conn;
+    });
+
+    // Get all schemas
+    const schemasResult = await sql`
+      SELECT schema_name
+      FROM information_schema.schemata
+      WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+      ORDER BY schema_name
+    `;
+    const schemas = schemasResult.map(row => row.schema_name as string);
+
+    // Get aggregate stats across all schemas
+    let totalTables = 0;
+    let totalRows = 0;
+    let totalSize = 0;
+
+    for (const schema of schemas) {
+      const tablesResult = await sql`
+        SELECT
+          COUNT(*) as table_count,
+          COALESCE(SUM(s.n_live_tup), 0) as total_rows,
+          COALESCE(SUM(pg_total_relation_size(quote_ident(t.table_schema)||'.'||quote_ident(t.table_name))), 0) as total_size
+        FROM information_schema.tables t
+        LEFT JOIN pg_stat_user_tables s ON s.schemaname = t.table_schema AND s.relname = t.table_name
+        WHERE t.table_schema = ${schema}
+          AND t.table_type = 'BASE TABLE'
+      `;
+
+      if (tablesResult.length > 0) {
+        totalTables += Number(tablesResult[0].table_count) || 0;
+        totalRows += Number(tablesResult[0].total_rows) || 0;
+        totalSize += Number(tablesResult[0].total_size) || 0;
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        schemas: schemas.length,
+        tables: totalTables,
+        rows: totalRows,
+        sizeBytes: totalSize,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get connection stats', error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get stats',
+      },
+      500
+    );
+  }
+});
+

@@ -160,6 +160,11 @@ class ApiClient {
     return this.request('/api/connections');
   }
 
+  // Get connection statistics
+  async getConnectionStats(connectionId: string): Promise<ApiResponse<{ schemas: number; tables: number; rows: number; sizeBytes: number }>> {
+    return this.request(`/api/connections/${connectionId}/stats`);
+  }
+
   // Delete saved connection
   async deleteSavedConnection(name: string): Promise<ApiResponse<void>> {
     return this.request(`/api/connections/saved/${encodeURIComponent(name)}`, {

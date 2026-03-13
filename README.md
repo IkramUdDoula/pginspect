@@ -78,7 +78,8 @@ cp .env.example .env
 createdb pgadmin
 psql -d pgadmin -f db/schema.sql
 
-# 5. Start development server
+# 5. Start development server 
+# Note: make sure docker instance of the app is not running. Otherwise this will fail since local deployment need port 3000 to be open. 
 npm run dev
 ```
 
