@@ -126,9 +126,92 @@ WHERE table_schema = 'public'
 ORDER BY table_name;
 
 -- ============================================================================
+-- AUDIT LOGS TABLE
+-- ============================================================================
+-- Tracks all user activities and database operations for compliance and security
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Who performed the action
+  user_id VARCHAR(255) NOT NULL,  -- References users(id) from Clerk
+  user_email VARCHAR(255) NOT NULL,  -- Denormalized for quick access
+  user_name VARCHAR(255),  -- Denormalized for display
+  
+  -- What action was performed
+  action_type VARCHAR(50) NOT NULL,  -- e.g., 'query_execute', 'connection_create', 'view_save'
+  action_category VARCHAR(30) NOT NULL,  -- e.g., 'query', 'connection', 'view', 'data', 'auth'
+  action_description TEXT NOT NULL,  -- Human-readable description
+  
+  -- When it happened
+  timestamp TIMESTAMP DEFAULT NOW() NOT NULL,
+  
+  -- Where it happened (database context)
+  connection_id INTEGER,  -- References user_connections(id), nullable
+  connection_name VARCHAR(255),  -- Denormalized connection name
+  database_name VARCHAR(255),  -- Target database
+  schema_name VARCHAR(255),  -- Target schema
+  table_name VARCHAR(255),  -- Target table (if applicable)
+  
+  -- What was affected
+  resource_type VARCHAR(50),  -- e.g., 'table', 'view', 'connection', 'query'
+  resource_id VARCHAR(255),  -- ID of affected resource
+  resource_name VARCHAR(255),  -- Name of affected resource
+  
+  -- Query details (for query operations)
+  query_text TEXT,  -- SQL query executed (truncated if too long)
+  query_type VARCHAR(20),  -- 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DDL', etc.
+  rows_affected INTEGER,  -- Number of rows affected
+  execution_time_ms INTEGER,  -- Query execution time in milliseconds
+  
+  -- Operation status
+  status VARCHAR(20) NOT NULL,  -- 'success', 'error', 'warning'
+  error_message TEXT,  -- Error details if status is 'error'
+  
+  -- Request metadata
+  ip_address VARCHAR(45),  -- IPv4 or IPv6 address
+  user_agent TEXT,  -- Browser/client information
+  request_id VARCHAR(100),  -- Unique request identifier for tracing
+  
+  -- Additional context (JSON for flexibility)
+  metadata JSONB,  -- Additional structured data
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for audit_logs table
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action_type ON audit_logs(action_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action_category ON audit_logs(action_category);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_connection_id ON audit_logs(connection_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_timestamp ON audit_logs(user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category_timestamp ON audit_logs(action_category, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_database_name ON audit_logs(database_name);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_table_name ON audit_logs(table_name);
+
+-- GIN index for JSONB metadata queries
+CREATE INDEX IF NOT EXISTS idx_audit_logs_metadata ON audit_logs USING GIN (metadata);
+
+-- Composite index for common filter combinations
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_category_timestamp 
+  ON audit_logs(user_id, action_category, timestamp DESC);
+
+-- Comment on table
+COMMENT ON TABLE audit_logs IS 'Comprehensive audit trail of all user activities and database operations';
+
+-- Trigger for audit_logs updated_at
+CREATE TRIGGER update_audit_logs_updated_at 
+  BEFORE UPDATE ON audit_logs 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================================
 -- NOTES
 -- ============================================================================
 -- 1. Users table is populated automatically when users sign in via Clerk
 -- 2. User connections are created when users add database connections in the UI
 -- 3. Passwords are encrypted using AES-256-GCM before storage
+-- 4. Audit logs track all user activities for compliance and security
 -- ============================================================================

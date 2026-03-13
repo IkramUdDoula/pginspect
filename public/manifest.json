@@ -1,0 +1,32 @@
+{
+  "name": "pgInspect - PostgreSQL Database Manager",
+  "short_name": "pgInspect",
+  "description": "Visual query builder, SQL editor, and database management tool for PostgreSQL",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "513x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "developer tools", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View database connections",
+      "url": "/app"
+    },
+    {
+      "name": "Audit Logs",
+      "short_name": "Audit",
+      "description": "View audit logs",
+      "url": "/app/audit"
+    }
+  ]
+}

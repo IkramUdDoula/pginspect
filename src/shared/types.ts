@@ -141,3 +141,83 @@ export interface ViewExecutionRequest {
 export interface ViewListResponse {
   views: SavedView[];
 }
+
+// Audit log types
+export type AuditActionCategory = 'auth' | 'connection' | 'query' | 'view' | 'data' | 'schema' | 'system';
+export type AuditStatus = 'success' | 'error' | 'warning';
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName?: string;
+  actionType: string;
+  actionCategory: AuditActionCategory;
+  actionDescription: string;
+  timestamp: Date;
+  connectionId?: number;
+  connectionName?: string;
+  databaseName?: string;
+  schemaName?: string;
+  tableName?: string;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
+  queryText?: string;
+  queryType?: string;
+  rowsAffected?: number;
+  executionTimeMs?: number;
+  status: AuditStatus;
+  errorMessage?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  requestId?: string;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+}
+
+export interface AuditLogFilter {
+  userId?: string;
+  actionCategory?: string;
+  actionType?: string;
+  status?: string;
+  connectionId?: number;
+  databaseName?: string;
+  tableName?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  searchQuery?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AuditLogStats {
+  totalLogs: number;
+  successCount: number;
+  errorCount: number;
+  warningCount: number;
+  categoryCounts: Record<string, number>;
+  topActions: Array<{ actionType: string; count: number }>;
+  recentActivity: AuditLog[];
+}
+
+export interface CreateAuditLogRequest {
+  actionType: string;
+  actionCategory: AuditActionCategory;
+  actionDescription: string;
+  connectionId?: number;
+  connectionName?: string;
+  databaseName?: string;
+  schemaName?: string;
+  tableName?: string;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
+  queryText?: string;
+  queryType?: string;
+  rowsAffected?: number;
+  executionTimeMs?: number;
+  status: AuditStatus;
+  errorMessage?: string;
+  metadata?: Record<string, any>;
+}

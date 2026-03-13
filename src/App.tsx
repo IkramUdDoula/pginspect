@@ -11,8 +11,11 @@ import { setAuthTokenProvider } from "@/lib/apiClient";
 import { SignIn } from "@/components/auth/SignIn";
 import { SignUp } from "@/components/auth/SignUp";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
+import AuditLog from "./pages/AuditLog";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@clerk/react";
 import React, { useEffect } from "react";
@@ -165,6 +168,8 @@ const App = () => (
           <AuthTokenProvider>
             <Toaster />
             <Sonner />
+            <OfflineIndicator />
+            <InstallPrompt />
             <BrowserRouter>
               <Routes>
                 {/* Public routes */}
@@ -182,6 +187,16 @@ const App = () => (
                           <Index />
                         </ViewProvider>
                       </ConnectionProvider>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Protected audit route */}
+                <Route
+                  path="/app/audit"
+                  element={
+                    <ProtectedRoute>
+                      <AuditLog />
                     </ProtectedRoute>
                   }
                 />
