@@ -87,122 +87,131 @@ export class AuditService {
   /**
    * Get audit logs with filters
    */
-  static async getLogs(
-    userId: string,
-    filters: AuditLogFilter = {}
-  ): Promise<{ logs: AuditLog[]; total: number }> {
-    const db = getAppDb();
-    
-    // Build dynamic WHERE conditions
-    const whereConditions: any[] = [];
-    const whereParts: string[] = ['user_id = $1'];
-    const params: any[] = [userId];
-    let paramIndex = 2;
+  /**
+     * Get audit logs with filters
+     */
+    static async getLogs(
+      userId: string,
+      filters: AuditLogFilter = {}
+    ): Promise<{ logs: AuditLog[]; total: number }> {
+      const db = getAppDb();
 
-    if (filters.actionCategory) {
-      whereParts.push(`action_category = $${paramIndex++}`);
-      params.push(filters.actionCategory);
+      // Build dynamic WHERE conditions
+      const whereConditions: any[] = [];
+      const whereParts: string[] = ['user_id = $1'];
+      const params: any[] = [userId];
+      let paramIndex = 2;
+
+      if (filters.actionCategory) {
+        whereParts.push(`action_category = $${paramIndex++}`);
+        params.push(filters.actionCategory);
+      }
+
+      if (filters.userEmail) {
+        whereParts.push(`user_email ILIKE $${paramIndex++}`);
+        params.push(`%${filters.userEmail}%`);
+      }
+
+      if (filters.actionType) {
+        whereParts.push(`action_type = $${paramIndex++}`);
+        params.push(filters.actionType);
+      }
+
+      if (filters.status) {
+        whereParts.push(`status = $${paramIndex++}`);
+        params.push(filters.status);
+      }
+
+      if (filters.connectionId) {
+        whereParts.push(`connection_id = $${paramIndex++}`);
+        params.push(filters.connectionId);
+      }
+
+      if (filters.databaseName) {
+        whereParts.push(`database_name = $${paramIndex++}`);
+        params.push(filters.databaseName);
+      }
+
+      if (filters.tableName) {
+        whereParts.push(`table_name = $${paramIndex++}`);
+        params.push(filters.tableName);
+      }
+
+      if (filters.dateFrom) {
+        whereParts.push(`timestamp >= $${paramIndex++}`);
+        params.push(filters.dateFrom);
+      }
+
+      if (filters.dateTo) {
+        whereParts.push(`timestamp <= $${paramIndex++}`);
+        params.push(filters.dateTo);
+      }
+
+      if (filters.searchQuery) {
+        whereParts.push(`(
+          action_description ILIKE $${paramIndex} OR
+          query_text ILIKE $${paramIndex} OR
+          resource_name ILIKE $${paramIndex} OR
+          error_message ILIKE $${paramIndex}
+        )`);
+        params.push(`%${filters.searchQuery}%`);
+        paramIndex++;
+      }
+
+      const whereClause = whereParts.join(' AND ');
+
+      // Get total count
+      const countResult = await db.unsafe(
+        `SELECT COUNT(*) as total FROM audit_logs WHERE ${whereClause}`,
+        params
+      );
+      const total = parseInt(countResult[0].total);
+
+      // Get logs with pagination
+      const limit = filters.limit || 50;
+      const offset = filters.offset || 0;
+
+      const logsResult = await db.unsafe(
+        `SELECT * FROM audit_logs 
+         WHERE ${whereClause}
+         ORDER BY timestamp DESC
+         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+        [...params, limit, offset]
+      );
+
+      const logs: AuditLog[] = logsResult.map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.user_email,
+        userName: row.user_name,
+        actionType: row.action_type,
+        actionCategory: row.action_category,
+        actionDescription: row.action_description,
+        timestamp: new Date(row.timestamp),
+        connectionId: row.connection_id,
+        connectionName: row.connection_name,
+        databaseName: row.database_name,
+        schemaName: row.schema_name,
+        tableName: row.table_name,
+        resourceType: row.resource_type,
+        resourceId: row.resource_id,
+        resourceName: row.resource_name,
+        queryText: row.query_text,
+        queryType: row.query_type,
+        rowsAffected: row.rows_affected,
+        executionTimeMs: row.execution_time_ms,
+        status: row.status,
+        errorMessage: row.error_message,
+        ipAddress: row.ip_address,
+        userAgent: row.user_agent,
+        requestId: row.request_id,
+        metadata: row.metadata,
+        createdAt: new Date(row.created_at),
+      }));
+
+      return { logs, total };
     }
 
-    if (filters.actionType) {
-      whereParts.push(`action_type = $${paramIndex++}`);
-      params.push(filters.actionType);
-    }
-
-    if (filters.status) {
-      whereParts.push(`status = $${paramIndex++}`);
-      params.push(filters.status);
-    }
-
-    if (filters.connectionId) {
-      whereParts.push(`connection_id = $${paramIndex++}`);
-      params.push(filters.connectionId);
-    }
-
-    if (filters.databaseName) {
-      whereParts.push(`database_name = $${paramIndex++}`);
-      params.push(filters.databaseName);
-    }
-
-    if (filters.tableName) {
-      whereParts.push(`table_name = $${paramIndex++}`);
-      params.push(filters.tableName);
-    }
-
-    if (filters.dateFrom) {
-      whereParts.push(`timestamp >= $${paramIndex++}`);
-      params.push(filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      whereParts.push(`timestamp <= $${paramIndex++}`);
-      params.push(filters.dateTo);
-    }
-
-    if (filters.searchQuery) {
-      whereParts.push(`(
-        action_description ILIKE $${paramIndex} OR
-        query_text ILIKE $${paramIndex} OR
-        resource_name ILIKE $${paramIndex} OR
-        error_message ILIKE $${paramIndex}
-      )`);
-      params.push(`%${filters.searchQuery}%`);
-      paramIndex++;
-    }
-
-    const whereClause = whereParts.join(' AND ');
-
-    // Get total count
-    const countResult = await db.unsafe(
-      `SELECT COUNT(*) as total FROM audit_logs WHERE ${whereClause}`,
-      params
-    );
-    const total = parseInt(countResult[0].total);
-
-    // Get logs with pagination
-    const limit = filters.limit || 50;
-    const offset = filters.offset || 0;
-
-    const logsResult = await db.unsafe(
-      `SELECT * FROM audit_logs 
-       WHERE ${whereClause}
-       ORDER BY timestamp DESC
-       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...params, limit, offset]
-    );
-
-    const logs: AuditLog[] = logsResult.map((row: any) => ({
-      id: row.id,
-      userId: row.user_id,
-      userEmail: row.user_email,
-      userName: row.user_name,
-      actionType: row.action_type,
-      actionCategory: row.action_category,
-      actionDescription: row.action_description,
-      timestamp: new Date(row.timestamp),
-      connectionId: row.connection_id,
-      connectionName: row.connection_name,
-      databaseName: row.database_name,
-      schemaName: row.schema_name,
-      tableName: row.table_name,
-      resourceType: row.resource_type,
-      resourceId: row.resource_id,
-      resourceName: row.resource_name,
-      queryText: row.query_text,
-      queryType: row.query_type,
-      rowsAffected: row.rows_affected,
-      executionTimeMs: row.execution_time_ms,
-      status: row.status,
-      errorMessage: row.error_message,
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
-      requestId: row.request_id,
-      metadata: row.metadata,
-      createdAt: new Date(row.created_at),
-    }));
-
-    return { logs, total };
-  }
 
   /**
    * Get a single audit log by ID
@@ -344,6 +353,22 @@ export class AuditService {
       topActions,
       recentActivity,
     };
+  }
+
+  /**
+   * Get unique user emails from audit logs
+   */
+  static async getUserEmails(userId: string): Promise<string[]> {
+    const db = getAppDb();
+
+    const result = await db`
+      SELECT DISTINCT user_email
+      FROM audit_logs
+      WHERE user_id = ${userId}
+      ORDER BY user_email ASC
+    `;
+
+    return result.map((row: any) => row.user_email);
   }
 
   /**

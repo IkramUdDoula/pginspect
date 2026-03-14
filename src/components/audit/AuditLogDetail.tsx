@@ -39,28 +39,28 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
     if (!value) return null;
     
     return (
-      <div className="grid grid-cols-3 gap-4 py-2 border-b border-border">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-2 border-b border-border">
         <div className="text-xs font-medium text-muted-foreground">{label}</div>
-        <div className="col-span-2 text-xs font-mono">{value}</div>
+        <div className="col-span-1 sm:col-span-2 text-xs font-mono break-all">{value}</div>
       </div>
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto scrollbar-thin">
+      <DialogContent className="max-w-2xl sm:max-w-3xl max-h-[85vh] overflow-y-auto scrollbar-thin p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             {getStatusIcon(log.status)}
-            Audit Log Details
+            <span>Audit Log Details</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Basic Info */}
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Basic Information</h3>
-            <div className="bg-secondary/30 rounded-lg p-3 space-y-0">
+            <h3 className="text-xs sm:text-sm font-semibold">Basic Information</h3>
+            <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 space-y-0">
               <DetailRow label="ID" value={log.id} />
               <DetailRow label="Timestamp" value={format(new Date(log.timestamp), 'PPpp')} />
               <DetailRow label="User Email" value={log.userEmail} />
@@ -73,17 +73,17 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
 
           {/* Description */}
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Description</h3>
-            <div className="bg-secondary/30 rounded-lg p-3">
-              <p className="text-xs">{log.actionDescription}</p>
+            <h3 className="text-xs sm:text-sm font-semibold">Description</h3>
+            <div className="bg-secondary/30 rounded-lg p-2 sm:p-3">
+              <p className="text-xs break-words">{log.actionDescription}</p>
             </div>
           </div>
 
           {/* Resource Info */}
           {(log.connectionName || log.databaseName || log.schemaName || log.tableName || log.resourceName) && (
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Resource Information</h3>
-              <div className="bg-secondary/30 rounded-lg p-3 space-y-0">
+              <h3 className="text-xs sm:text-sm font-semibold">Resource Information</h3>
+              <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 space-y-0">
                 <DetailRow label="Connection" value={log.connectionName} />
                 <DetailRow label="Database" value={log.databaseName} />
                 <DetailRow label="Schema" value={log.schemaName} />
@@ -98,22 +98,22 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
           {/* Query Info */}
           {log.queryText && (
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Query</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs sm:text-sm font-semibold">Query</h3>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(log.queryText!)}
-                  className="h-7 text-xs"
+                  className="h-6 sm:h-7 text-xs px-2"
                 >
                   <Copy className="h-3 w-3 mr-1" />
-                  Copy
+                  <span className="hidden sm:inline">Copy</span>
                 </Button>
               </div>
-              <div className="bg-secondary/30 rounded-lg p-3 max-h-64 overflow-y-auto scrollbar-thin">
-                <pre className="text-xs font-mono whitespace-pre-wrap">{log.queryText}</pre>
+              <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 max-h-48 overflow-y-auto scrollbar-thin">
+                <pre className="text-xs font-mono whitespace-pre-wrap break-words">{log.queryText}</pre>
               </div>
-              <div className="bg-secondary/30 rounded-lg p-3 space-y-0 mt-2">
+              <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 space-y-0 mt-2">
                 <DetailRow label="Query Type" value={log.queryType} />
                 <DetailRow label="Rows Affected" value={log.rowsAffected} />
                 <DetailRow label="Execution Time" value={log.executionTimeMs ? `${log.executionTimeMs}ms` : undefined} />
@@ -124,17 +124,17 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
           {/* Error Info */}
           {log.errorMessage && (
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-red-500">Error Message</h3>
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 max-h-32 overflow-y-auto scrollbar-thin">
-                <p className="text-xs text-red-500">{log.errorMessage}</p>
+              <h3 className="text-xs sm:text-sm font-semibold text-red-500">Error Message</h3>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 sm:p-3 max-h-32 overflow-y-auto scrollbar-thin">
+                <p className="text-xs text-red-500 break-words">{log.errorMessage}</p>
               </div>
             </div>
           )}
 
           {/* Request Metadata */}
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Request Metadata</h3>
-            <div className="bg-secondary/30 rounded-lg p-3 space-y-0">
+            <h3 className="text-xs sm:text-sm font-semibold">Request Metadata</h3>
+            <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 space-y-0">
               <DetailRow label="IP Address" value={log.ipAddress} />
               <DetailRow label="User Agent" value={log.userAgent} />
               <DetailRow label="Request ID" value={log.requestId} />
@@ -144,20 +144,20 @@ export function AuditLogDetail({ log, open, onClose }: AuditLogDetailProps) {
           {/* Additional Metadata */}
           {log.metadata && Object.keys(log.metadata).length > 0 && (
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Additional Metadata</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs sm:text-sm font-semibold">Additional Metadata</h3>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(JSON.stringify(log.metadata, null, 2))}
-                  className="h-7 text-xs"
+                  className="h-6 sm:h-7 text-xs px-2"
                 >
                   <Copy className="h-3 w-3 mr-1" />
-                  Copy
+                  <span className="hidden sm:inline">Copy</span>
                 </Button>
               </div>
-              <div className="bg-secondary/30 rounded-lg p-3 max-h-64 overflow-y-auto scrollbar-thin">
-                <pre className="text-xs font-mono whitespace-pre-wrap">
+              <div className="bg-secondary/30 rounded-lg p-2 sm:p-3 max-h-48 overflow-y-auto scrollbar-thin">
+                <pre className="text-xs font-mono whitespace-pre-wrap break-words">
                   {JSON.stringify(log.metadata, null, 2)}
                 </pre>
               </div>

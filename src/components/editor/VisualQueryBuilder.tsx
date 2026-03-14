@@ -117,20 +117,20 @@ export function VisualQueryBuilder() {
         return (
           <div className="space-y-1.5">
             {allColumns.length === 0 && <p className="text-xs text-muted-foreground">Select a table first</p>}
-            <div className="flex items-center gap-3 text-[10px]">
-              <button onClick={() => updateBlock(block.id, { columns: allColumns.map((c) => c.name) })} className="text-accent hover:underline">Select all</button>
-              <button onClick={() => updateBlock(block.id, { columns: [] })} className="text-muted-foreground hover:underline">Clear</button>
+            <div className="flex items-center gap-2 sm:gap-3 text-[10px]">
+              <button onClick={() => updateBlock(block.id, { columns: allColumns.map((c) => c.name) })} className="text-accent hover:underline whitespace-nowrap">Select all</button>
+              <button onClick={() => updateBlock(block.id, { columns: [] })} className="text-muted-foreground hover:underline whitespace-nowrap">Clear</button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {allColumns.map((col) => {
                 const selected = (block.config.columns || []).includes(col.name);
                 return (
                   <button key={col.name} onClick={() => {
                     const cols = block.config.columns || [];
                     updateBlock(block.id, { columns: selected ? cols.filter((c: string) => c !== col.name) : [...cols, col.name] });
-                  }} className={`text-[11px] px-2 py-1 rounded font-mono border transition-colors ${selected ? "bg-accent/15 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"}`}>
+                  }} className={`text-[10px] px-1.5 sm:px-2 py-1 rounded font-mono border transition-colors whitespace-nowrap ${selected ? "bg-accent/15 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"}`}>
                     {col.name}
-                    <span className="ml-1 text-[9px] opacity-50">{col.type}</span>
+                    <span className="ml-0.5 sm:ml-1 text-[9px] opacity-50">{col.type}</span>
                   </button>
                 );
               })}
@@ -148,10 +148,10 @@ export function VisualQueryBuilder() {
         const isEnum = selectedCol?.enumValues && selectedCol.enumValues.length > 0;
 
         return (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
             <Select value={block.config.column || ""} onValueChange={(v) => updateBlock(block.id, { column: v, operator: "", value: "" })}>
-              <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs font-mono">
-                <SelectValue placeholder="column..." />
+              <SelectTrigger className="h-8 w-auto min-w-[100px] sm:min-w-[120px] text-xs font-mono">
+                <SelectValue placeholder="col..." />
               </SelectTrigger>
               <SelectContent>
                 {allColumns.map((c) => (
@@ -162,8 +162,8 @@ export function VisualQueryBuilder() {
               </SelectContent>
             </Select>
             <Select value={block.config.operator || ""} onValueChange={(v) => updateBlock(block.id, { operator: v })}>
-              <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
-                <SelectValue placeholder="operator..." />
+              <SelectTrigger className="h-8 w-auto min-w-[90px] sm:min-w-[120px] text-xs">
+                <SelectValue placeholder="op..." />
               </SelectTrigger>
               <SelectContent>
                 {operators.map((op) => (
@@ -174,8 +174,8 @@ export function VisualQueryBuilder() {
             {needsValue && (
               isEnum && (block.config.operator === "=" || block.config.operator === "!=" || block.config.operator === "IN") ? (
                 <Select value={block.config.value || ""} onValueChange={(v) => updateBlock(block.id, { value: v })}>
-                  <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs font-mono">
-                    <SelectValue placeholder="value..." />
+                  <SelectTrigger className="h-8 w-auto min-w-[80px] sm:min-w-[100px] text-xs font-mono">
+                    <SelectValue placeholder="val..." />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedCol!.enumValues!.map((v) => (
@@ -185,9 +185,9 @@ export function VisualQueryBuilder() {
                 </Select>
               ) : (
                 <>
-                  <input value={block.config.value || ""} onChange={(e) => updateBlock(block.id, { value: e.target.value })} placeholder="value..." className="h-8 px-2 rounded bg-background border border-border text-xs font-mono w-32 focus:outline-none focus:ring-1 focus:ring-ring" />
+                  <input value={block.config.value || ""} onChange={(e) => updateBlock(block.id, { value: e.target.value })} placeholder="val..." className="h-8 px-2 rounded bg-background border border-border text-xs font-mono w-24 sm:w-32 focus:outline-none focus:ring-1 focus:ring-ring" />
                   {needsTwoValues && (
-                    <input value={block.config.value2 || ""} onChange={(e) => updateBlock(block.id, { value2: e.target.value })} placeholder="to..." className="h-8 px-2 rounded bg-background border border-border text-xs font-mono w-32 focus:outline-none focus:ring-1 focus:ring-ring" />
+                    <input value={block.config.value2 || ""} onChange={(e) => updateBlock(block.id, { value2: e.target.value })} placeholder="to..." className="h-8 px-2 rounded bg-background border border-border text-xs font-mono w-24 sm:w-32 focus:outline-none focus:ring-1 focus:ring-ring" />
                   )}
                 </>
               )
@@ -198,10 +198,10 @@ export function VisualQueryBuilder() {
 
       case "sort":
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
             <Select value={block.config.column || ""} onValueChange={(v) => updateBlock(block.id, { column: v })}>
-              <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs font-mono">
-                <SelectValue placeholder="column..." />
+              <SelectTrigger className="h-8 w-auto min-w-[100px] sm:min-w-[120px] text-xs font-mono">
+                <SelectValue placeholder="col..." />
               </SelectTrigger>
               <SelectContent>
                 {allColumns.map((c) => (
@@ -211,8 +211,8 @@ export function VisualQueryBuilder() {
             </Select>
             <div className="flex rounded border border-border overflow-hidden">
               {["ASC", "DESC"].map((d) => (
-                <button key={d} onClick={() => updateBlock(block.id, { direction: d })} className={`px-3 py-1.5 text-[10px] font-medium transition-colors ${block.config.direction === d ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"}`}>
-                  {d === "ASC" ? "↑ Asc" : "↓ Desc"}
+                <button key={d} onClick={() => updateBlock(block.id, { direction: d })} className={`px-2 sm:px-3 py-1.5 text-[10px] font-medium transition-colors ${block.config.direction === d ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"}`}>
+                  {d === "ASC" ? "↑" : "↓"}
                 </button>
               ))}
             </div>
@@ -221,19 +221,19 @@ export function VisualQueryBuilder() {
 
       case "limit":
         return (
-          <div className="flex items-center gap-3">
-            <input type="number" min="1" max="10000" value={block.config.limit || ""} onChange={(e) => updateBlock(block.id, { limit: e.target.value })} className="w-20 h-8 px-2 rounded bg-background border border-border text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring" />
-            <input type="range" min="1" max="10000" value={block.config.limit || 50} onChange={(e) => updateBlock(block.id, { limit: e.target.value })} className="flex-1 accent-primary h-1" />
-            <span className="text-[10px] text-muted-foreground w-12 text-right">{block.config.limit || 50} rows</span>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <input type="number" min="1" max="10000" value={block.config.limit || ""} onChange={(e) => updateBlock(block.id, { limit: e.target.value })} className="w-16 sm:w-20 h-8 px-2 rounded bg-background border border-border text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring" />
+            <input type="range" min="1" max="10000" value={block.config.limit || 50} onChange={(e) => updateBlock(block.id, { limit: e.target.value })} className="flex-1 min-w-[100px] accent-primary h-1" />
+            <span className="text-[10px] text-muted-foreground w-10 sm:w-12 text-right">{block.config.limit || 50}</span>
           </div>
         );
 
       case "join":
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
               <Select value={block.config.joinType || "INNER"} onValueChange={(v) => updateBlock(block.id, { joinType: v })}>
-                <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                <SelectTrigger className="h-8 w-auto min-w-[80px] sm:min-w-[100px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -244,8 +244,8 @@ export function VisualQueryBuilder() {
                 </SelectContent>
               </Select>
               <Select value={block.config.table || ""} onValueChange={(v) => updateBlock(block.id, { table: v })}>
-                <SelectTrigger className="flex-1 h-8 text-xs font-mono">
-                  <SelectValue placeholder="table..." />
+                <SelectTrigger className="flex-1 min-w-[100px] h-8 text-xs font-mono">
+                  <SelectValue placeholder="tbl..." />
                 </SelectTrigger>
                 <SelectContent>
                   {currentTables.map((t) => (
@@ -254,11 +254,11 @@ export function VisualQueryBuilder() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="text-[10px]">ON</span>
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
+              <span className="text-[10px] flex-shrink-0">ON</span>
               <Select value={block.config.leftCol || ""} onValueChange={(v) => updateBlock(block.id, { leftCol: v })}>
-                <SelectTrigger className="flex-1 h-8 text-xs font-mono">
-                  <SelectValue placeholder="left col..." />
+                <SelectTrigger className="flex-1 min-w-[80px] h-8 text-xs font-mono">
+                  <SelectValue placeholder="L..." />
                 </SelectTrigger>
                 <SelectContent>
                   {allColumns.map((c) => (
@@ -266,10 +266,10 @@ export function VisualQueryBuilder() {
                   ))}
                 </SelectContent>
               </Select>
-              <span>=</span>
+              <span className="flex-shrink-0">=</span>
               <Select value={block.config.rightCol || ""} onValueChange={(v) => updateBlock(block.id, { rightCol: v })}>
-                <SelectTrigger className="flex-1 h-8 text-xs font-mono">
-                  <SelectValue placeholder="right col..." />
+                <SelectTrigger className="flex-1 min-w-[80px] h-8 text-xs font-mono">
+                  <SelectValue placeholder="R..." />
                 </SelectTrigger>
                 <SelectContent>
                   {(() => { const jt = currentTables.find((t) => t.name === block.config.table); return jt?.columns || []; })().map((c) => (
@@ -284,9 +284,9 @@ export function VisualQueryBuilder() {
       case "aggregate":
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
               <Select value={block.config.func || "COUNT"} onValueChange={(v) => updateBlock(block.id, { func: v })}>
-                <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs">
+                <SelectTrigger className="h-8 w-auto min-w-[70px] sm:min-w-[90px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,10 +295,10 @@ export function VisualQueryBuilder() {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-[10px] text-muted-foreground">(</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">(</span>
               <Select value={block.config.column || ""} onValueChange={(v) => updateBlock(block.id, { column: v })}>
-                <SelectTrigger className="flex-1 h-8 text-xs font-mono">
-                  <SelectValue placeholder="column..." />
+                <SelectTrigger className="flex-1 min-w-[80px] h-8 text-xs font-mono">
+                  <SelectValue placeholder="col..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="*" className="text-xs font-mono">*</SelectItem>
@@ -307,7 +307,7 @@ export function VisualQueryBuilder() {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-[10px] text-muted-foreground">)</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">)</span>
             </div>
             <div>
               <span className="text-[10px] uppercase text-muted-foreground">Group by</span>
@@ -316,7 +316,7 @@ export function VisualQueryBuilder() {
                   <button key={col.name} onClick={() => {
                     const gb = block.config.groupBy || [];
                     updateBlock(block.id, { groupBy: gb.includes(col.name) ? gb.filter((c: string) => c !== col.name) : [...gb, col.name] });
-                  }} className={`text-[10px] px-2 py-0.5 rounded font-mono border transition-colors ${(block.config.groupBy || []).includes(col.name) ? "bg-accent/15 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                  }} className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded font-mono border transition-colors ${(block.config.groupBy || []).includes(col.name) ? "bg-accent/15 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}>
                     {col.name}
                   </button>
                 ))}
@@ -333,15 +333,15 @@ export function VisualQueryBuilder() {
   return (
     <div className="flex flex-col h-full">
       {/* Compact block palette */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border">
+      <div className="flex items-center gap-0.5 sm:gap-1.5 px-2 sm:px-3 py-1.5 border-b border-border overflow-x-auto">
         {(Object.keys(blockMeta) as BlockType[]).map((type) => {
           const meta = blockMeta[type];
           const exists = type === "from" && queryBlocks.some((b) => b.type === "from");
           if (exists && type === "from") return null;
           return (
-            <button key={type} onClick={() => addBlock(type)} className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors">
-              <Plus className="h-2.5 w-2.5" />
-              {meta.keyword}
+            <button key={type} onClick={() => addBlock(type)} className="flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors whitespace-nowrap flex-shrink-0" title={`Add ${meta.keyword}`}>
+              <Plus className="h-2.5 w-2.5 flex-shrink-0" />
+              <span>{meta.keyword}</span>
             </button>
           );
         })}
@@ -356,21 +356,21 @@ export function VisualQueryBuilder() {
             <div key={block.id} className="border-b border-border animate-fade-in">
               <button
                 onClick={() => toggleExpand(block.id)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-surface-hover transition-colors group"
+                className="w-full flex items-center gap-2 px-2 sm:px-3 py-2 text-xs hover:bg-surface-hover transition-colors group"
               >
-                {isExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                <span className="font-mono font-semibold text-accent tracking-wide">{meta.keyword}</span>
+                {isExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
+                <span className="font-mono font-semibold text-accent tracking-wide flex-shrink-0">{meta.keyword}</span>
                 {!isExpanded && (
-                  <span className="text-muted-foreground font-mono truncate">{getSummary(block)}</span>
+                  <span className="text-muted-foreground font-mono truncate text-[10px] sm:text-xs">{getSummary(block)}</span>
                 )}
                 {block.type !== "from" && (
-                  <button onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} className="ml-auto opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5">
+                  <button onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} className="ml-auto opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 flex-shrink-0">
                     <X className="h-3 w-3" />
                   </button>
                 )}
               </button>
               {isExpanded && (
-                <div className="px-3 pb-3 pt-1 pl-8">
+                <div className="px-2 sm:px-3 pb-3 pt-1 pl-6 sm:pl-8 overflow-x-auto">
                   {renderBlockContent(block)}
                 </div>
               )}

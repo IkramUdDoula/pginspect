@@ -190,26 +190,38 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const executeView = useCallback(async (viewId: string) => {
+    console.log('[ViewContext] ========== EXECUTE VIEW STARTED ==========');
+    console.log('[ViewContext] View ID:', viewId);
+    
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
+      console.log('[ViewContext] Calling apiClient.executeView...');
       const response = await apiClient.executeView(viewId);
+      console.log('[ViewContext] API response:', response);
       
       if (response.success && response.data) {
         // Find the view in our state
         const view = state.views.find(v => v.id === viewId);
+        console.log('[ViewContext] Found view in state:', view);
+        
         if (view) {
+          console.log('[ViewContext] Setting current view and results');
           dispatch({ type: 'SET_CURRENT_VIEW', payload: view });
           dispatch({ type: 'SET_VIEW_RESULTS', payload: response.data });
           dispatch({ type: 'SET_VIEW_MODE', payload: true });
           // Load saved auto-refresh interval
           dispatch({ type: 'SET_AUTO_REFRESH', payload: view.autoRefreshInterval || 0 });
+          console.log('[ViewContext] View mode activated with auto-refresh:', view.autoRefreshInterval || 0);
         }
         dispatch({ type: 'SET_LOADING', payload: false });
+        console.log('[ViewContext] ========== EXECUTE VIEW COMPLETED ==========');
       } else {
+        console.error('[ViewContext] Execute view failed:', response.error);
         dispatch({ type: 'SET_ERROR', payload: response.error || 'Failed to execute view' });
       }
     } catch (error) {
+      console.error('[ViewContext] Execute view exception:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to execute view' });
     }
   }, [state.views]);
@@ -231,10 +243,13 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
   }, [state.currentView]);
 
   const exitViewMode = useCallback(() => {
+    console.log('[ViewContext] ========== EXIT VIEW MODE ==========');
+    console.log('[ViewContext] Clearing view mode state');
     dispatch({ type: 'SET_VIEW_MODE', payload: false });
     dispatch({ type: 'SET_CURRENT_VIEW', payload: null });
     dispatch({ type: 'SET_VIEW_RESULTS', payload: null });
     dispatch({ type: 'SET_AUTO_REFRESH', payload: 0 });
+    console.log('[ViewContext] View mode exited');
   }, []);
 
   const setAutoRefresh = useCallback(async (interval: number) => {

@@ -21,6 +21,7 @@ audit.get('/logs', async (c) => {
     
     // Parse query parameters
     const filters: AuditLogFilter = {
+      userEmail: c.req.query('userEmail'),
       actionCategory: c.req.query('actionCategory'),
       actionType: c.req.query('actionType'),
       status: c.req.query('status'),
@@ -99,6 +100,29 @@ audit.get('/stats', async (c) => {
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get audit stats',
+    }, 500);
+  }
+});
+
+/**
+ * GET /api/audit/users
+ * Get unique user emails from audit logs
+ */
+audit.get('/users', async (c) => {
+  try {
+    const auth = getAuth(c);
+
+    const emails = await AuditService.getUserEmails(auth.userId);
+
+    return c.json({
+      success: true,
+      data: { emails },
+    });
+  } catch (error) {
+    logger.error('Failed to get user emails', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user emails',
     }, 500);
   }
 });

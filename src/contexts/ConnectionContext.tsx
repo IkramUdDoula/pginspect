@@ -515,7 +515,14 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   }, [activeConnection, queryClient]);
 
   const runQuery = useCallback(async () => {
+    console.log('[ConnectionContext] ========== RUN QUERY STARTED ==========');
+    console.log('[ConnectionContext] Active connection:', activeConnection?.id);
+    console.log('[ConnectionContext] Editor mode:', editorMode);
+    console.log('[ConnectionContext] SQL text:', sqlText);
+    console.log('[ConnectionContext] Query blocks:', queryBlocks);
+    
     if (!activeConnection?.id) {
+      console.error('[ConnectionContext] No active connection');
       toast.error('No active connection');
       return;
     }
@@ -526,10 +533,13 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
 
       // If using visual query builder, build SQL from blocks
       if (editorMode === 'visual') {
+        console.log('[ConnectionContext] Building SQL from visual blocks');
         query = buildSQLFromBlocks(queryBlocks);
+        console.log('[ConnectionContext] Generated SQL:', query);
       }
 
       if (!query.trim()) {
+        console.error('[ConnectionContext] Empty query');
         toast.error('Please enter a query');
         return;
       }
@@ -539,6 +549,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       const limitMatch = query.match(/\bLIMIT\s+(\d+)/i);
       if (limitMatch) {
         queryLimit = parseInt(limitMatch[1]);
+        console.log('[ConnectionContext] Found LIMIT in query:', queryLimit);
       } else {
         // If no LIMIT in query, add one automatically
         query = query.trim();
@@ -546,7 +557,11 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
           query += ';';
         }
         query = query.replace(/;$/, ` LIMIT ${queryLimit};`);
+        console.log('[ConnectionContext] Added default LIMIT:', queryLimit);
       }
+
+      console.log('[ConnectionContext] Final query:', query);
+      console.log('[ConnectionContext] Executing query...');
 
       const response = await apiClient.executeQuery({
         connectionId: activeConnection.id,
@@ -554,15 +569,21 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         limit: queryLimit,
       });
 
+      console.log('[ConnectionContext] Query response:', response);
+
       if (!response.success || !response.data) {
+        console.error('[ConnectionContext] Query failed:', response.error);
         toast.error(response.error || 'Query execution failed');
         return;
       }
 
+      console.log('[ConnectionContext] Query successful. Rows:', response.data.rowCount, 'Time:', response.data.executionTime, 'ms');
       setQueryResult(response.data);
       setShowDashboard(false);
       toast.success(`Query executed in ${response.data.executionTime}ms`);
+      console.log('[ConnectionContext] ========== RUN QUERY COMPLETED ==========');
     } catch (error) {
+      console.error('[ConnectionContext] Query exception:', error);
       toast.error(error instanceof Error ? error.message : 'Query execution failed');
     } finally {
       setIsLoading(false);
