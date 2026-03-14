@@ -1,4 +1,4 @@
-import { Database, Zap, Shield, Cloud, ArrowRight } from "lucide-react";
+import { Database, Zap, Shield, Cloud, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useNavigate } from "react-router-dom";
@@ -29,8 +29,25 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => navigate("/sign-in")}>
-              Sign In
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/sign-in")}
+              disabled={!isLoaded}
+            >
+              {!isLoaded ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Checking...
+                </>
+              ) : isSignedIn ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </div>
         </div>
