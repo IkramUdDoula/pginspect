@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS saved_views (
   description TEXT,
   query_text TEXT NOT NULL,
   query_type VARCHAR(20) NOT NULL CHECK (query_type IN ('sql', 'visual')),
+  query_blocks TEXT,  -- JSON stringified query blocks for visual mode
   auto_refresh_interval INTEGER,  -- Auto-refresh interval in seconds (NULL = disabled)
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
