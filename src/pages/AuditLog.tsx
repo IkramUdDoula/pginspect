@@ -99,13 +99,18 @@ export default function AuditLogPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    await fetchLogs();
+    await fetchStats();
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopNavbar />
       
-      <div className="flex-1 flex overflow-hidden">
-        {/* Filters Sidebar */}
-        <div className="w-64 border-r border-border bg-card/50 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Filters Sidebar - Collapsible on mobile, always visible on lg+ */}
+        <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card/50 overflow-y-auto scrollbar-thin flex-shrink-0 max-h-[40vh] lg:max-h-none">
           <AuditLogFilters
             filters={filters}
             onFilterChange={handleFilterChange}
@@ -135,6 +140,7 @@ export default function AuditLogPage() {
                 onPageChange={handlePageChange}
                 onRowClick={setSelectedLog}
                 onExport={handleExport}
+                onRefresh={handleRefresh}
               />
             )}
           </div>

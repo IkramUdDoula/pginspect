@@ -30,11 +30,17 @@ function AppContent() {
 
   const showConnectionManager = !isInitialLoad && connections.length === 0 && !activeConnection;
 
-  // Sync visual blocks → SQL
+  // Sync visual blocks → SQL (only when in visual mode)
   useEffect(() => {
     if (editorMode === "visual") {
-      setSqlText(blocksToSQL(queryBlocks, activeSchema));
+      const generatedSQL = blocksToSQL(queryBlocks, activeSchema);
+      // Only update if the generated SQL is different to avoid unnecessary updates
+      if (generatedSQL !== sqlText) {
+        setSqlText(generatedSQL);
+      }
     }
+    // Note: We don't sync when switching FROM visual to SQL mode
+    // This preserves manually edited SQL content
   }, [queryBlocks, activeSchema, editorMode]);
 
   if (showConnectionManager || isConnectionManagerOpen) {
@@ -65,21 +71,21 @@ function AppContent() {
               {isViewMode ? (
                 <ViewToolbar />
               ) : (
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background">
-                  <div className="flex items-center gap-1 bg-secondary rounded-lg p-0.5">
-                    <button onClick={() => setEditorMode("visual")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                      <Layers className="h-3.5 w-3.5" /> Visual Builder
+                <div className="flex items-center justify-between px-2 sm:px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background gap-2 overflow-x-auto">
+                  <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5 flex-shrink-0">
+                    <button onClick={() => setEditorMode("visual")} className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${editorMode === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                      <Layers className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">Visual Builder</span>
                     </button>
-                    <button onClick={() => setEditorMode("sql")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorMode === "sql" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                      <Code className="h-3.5 w-3.5" /> SQL Editor
+                    <button onClick={() => setEditorMode("sql")} className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${editorMode === "sql" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                      <Code className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">SQL Editor</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     {selectedTable && (
-                      <span className="text-xs text-muted-foreground font-mono">{selectedTable.name}</span>
+                      <span className="text-xs text-muted-foreground font-mono hidden md:inline">{selectedTable.name}</span>
                     )}
-                    <button onClick={() => setIsInspectorOpen(!isInspectorOpen)} className={`p-1.5 rounded hover:bg-surface-hover ${isInspectorOpen ? "text-primary" : "text-muted-foreground"}`}>
+                    <button onClick={() => setIsInspectorOpen(!isInspectorOpen)} className={`p-1.5 rounded hover:bg-surface-hover flex-shrink-0 ${isInspectorOpen ? "text-primary" : "text-muted-foreground"}`} title="Toggle Inspector">
                       <PanelRight className="h-4 w-4" />
                     </button>
                     <button 
@@ -90,19 +96,21 @@ function AppContent() {
                         setIsInspectorOpen(true);
                       }}
                       disabled={!selectedTable}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                      title="Create new record"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Create
+                      <Plus className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">Create</span>
                     </button>
                     <button 
                       onClick={() => setShowSaveViewDialog(true)}
                       disabled={!sqlText.trim() || !activeConnection}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                      title="Save as View"
                     >
-                      <Save className="h-3.5 w-3.5" /> Save as View
+                      <Save className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">Save as View</span>
                     </button>
-                    <button onClick={runQuery} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
-                      <Play className="h-3.5 w-3.5" /> Run
+                    <button onClick={runQuery} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors whitespace-nowrap flex-shrink-0" title="Run query">
+                      <Play className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">Run</span>
                     </button>
                   </div>
                 </div>
@@ -122,7 +130,7 @@ function AppContent() {
                     {editorMode === "visual" && sqlText && (
                       <div className="border-t border-border px-3 py-2 bg-card/50 flex-shrink-0">
                         <div className="text-[10px] uppercase text-muted-foreground mb-1">Generated SQL</div>
-                        <pre className="text-xs font-mono text-foreground/70 whitespace-pre-wrap max-h-16 overflow-y-auto">{sqlText}</pre>
+                        <pre className="text-xs font-mono text-foreground/70 whitespace-pre-wrap max-h-16 overflow-y-auto scrollbar-thin">{sqlText}</pre>
                       </div>
                     )}
 

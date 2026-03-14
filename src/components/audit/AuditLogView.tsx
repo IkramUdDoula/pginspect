@@ -98,42 +98,38 @@ export function AuditLogView() {
     }
   };
 
+  const handleRefresh = async () => {
+    await fetchLogs();
+    await fetchStats();
+  };
+
   return (
-    <div className="flex-1 flex overflow-hidden">
-      {/* Filters Sidebar */}
-      <div className="w-64 border-r border-border bg-card/50 overflow-y-auto scrollbar-thin">
-        <AuditLogFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Stats */}
+      {stats && (
+        <div className="border-b border-border bg-card/30">
+          <AuditLogStats stats={stats} />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Stats */}
-        {stats && (
-          <div className="border-b border-border bg-card/30">
-            <AuditLogStats stats={stats} />
+        {loading ? (
+          <div className="h-full flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : (
+          <AuditLogTable
+            logs={logs}
+            total={total}
+            filters={filters}
+            onPageChange={handlePageChange}
+            onRowClick={setSelectedLog}
+            onExport={handleExport}
+            onRefresh={handleRefresh}
+            onFilterChange={handleFilterChange}
+          />
         )}
-
-        {/* Table */}
-        <div className="flex-1 overflow-hidden">
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <AuditLogTable
-              logs={logs}
-              total={total}
-              filters={filters}
-              onPageChange={handlePageChange}
-              onRowClick={setSelectedLog}
-              onExport={handleExport}
-            />
-          )}
-        </div>
       </div>
 
       {/* Detail Modal */}

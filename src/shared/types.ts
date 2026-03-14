@@ -114,6 +114,7 @@ export interface SavedView {
   description?: string;
   queryText: string;
   queryType: 'sql' | 'visual';
+  queryBlocks?: string; // JSON stringified query blocks for visual mode
   autoRefreshInterval?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -126,6 +127,7 @@ export interface CreateViewRequest {
   description?: string;
   queryText: string;
   queryType: 'sql' | 'visual';
+  queryBlocks?: string; // JSON stringified query blocks for visual mode
   autoRefreshInterval?: number;
 }
 
@@ -190,6 +192,7 @@ export interface AuditLog {
 
 export interface AuditLogFilter {
   userId?: string;
+  userEmail?: string;
   actionCategory?: string;
   actionType?: string;
   status?: string;

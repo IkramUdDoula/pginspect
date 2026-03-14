@@ -299,6 +299,7 @@ class ApiClient {
     const params = new URLSearchParams();
     
     if (filters) {
+      if (filters.userEmail) params.append('userEmail', filters.userEmail);
       if (filters.actionCategory) params.append('actionCategory', filters.actionCategory);
       if (filters.actionType) params.append('actionType', filters.actionType);
       if (filters.status) params.append('status', filters.status);
@@ -314,6 +315,10 @@ class ApiClient {
 
     const queryString = params.toString();
     return this.request(`/api/audit/logs${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAuditUserEmails(): Promise<ApiResponse<{ emails: string[] }>> {
+    return this.request('/api/audit/users');
   }
 
   async getAuditLog(id: string): Promise<ApiResponse<{ log: import('../shared/types').AuditLog }>> {

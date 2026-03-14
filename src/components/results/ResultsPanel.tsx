@@ -106,39 +106,34 @@ export function ResultsPanel() {
     <>
     <div className="flex flex-col h-full" data-results-panel>
       {/* Status bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border text-xs text-muted-foreground">
-        <div className="flex items-center gap-2 flex-1">
-          <span>
-            {filteredRows.length} {columnFilters.size > 0 && `of ${currentResult.rowCount}`} rows
-            {currentResult.isSimulated ? " · simulated" : ""} · {currentResult.executionTime}ms
-            {isViewMode && viewResults?.view && (
-              <span className="ml-2 text-primary">· {viewResults.view.name}</span>
-            )}
-          </span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 px-2 sm:px-3 py-2 sm:py-1.5 border-b border-border text-[10px] sm:text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           {columnFilters.size > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearAllFilters}
-              className="h-5 px-2 text-[10px] text-muted-foreground"
-            >
-              Clear all filters
-            </Button>
-          )}
-          {columnFilters.size > 0 && !isViewMode && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSaveViewDialog(true)}
-              className="h-5 px-2 text-[10px] text-primary"
-            >
-              <Save className="h-3 w-3 mr-1" /> Save Filtered View
-            </Button>
+            <>
+              <span className="whitespace-nowrap">
+                {filteredRows.length} of {currentResult.rowCount} rows (filtered)
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllFilters}
+                className="h-5 px-1.5 sm:px-2 text-[9px] sm:text-[10px] text-muted-foreground"
+              >
+                Clear all
+              </Button>
+              {!isViewMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSaveViewDialog(true)}
+                  className="h-5 px-1.5 sm:px-2 text-[9px] sm:text-[10px] text-primary"
+                >
+                  <Save className="h-2.5 sm:h-3 w-2.5 sm:w-3 mr-0.5 sm:mr-1" /> <span className="hidden sm:inline">Save Filtered View</span><span className="sm:hidden">Save</span>
+                </Button>
+              )}
+            </>
           )}
         </div>
-        <Button variant="ghost" size="sm" onClick={exportCSV} className="h-6 px-2 text-[10px] text-muted-foreground">
-          <Download className="h-3 w-3 mr-1" /> CSV
-        </Button>
       </div>
 
       {/* Active filters */}
@@ -208,13 +203,13 @@ export function ResultsPanel() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 px-3 py-2 border-t border-border text-xs text-muted-foreground">
-          <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="disabled:opacity-30">
-            <ChevronLeft className="h-3.5 w-3.5" />
+        <div className="flex items-center justify-center gap-2 px-2 sm:px-3 py-2 border-t border-border text-[10px] sm:text-xs text-muted-foreground">
+          <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="disabled:opacity-30 p-1">
+            <ChevronLeft className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
           </button>
-          <span>Page {page + 1} of {totalPages}</span>
-          <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page >= totalPages - 1} className="disabled:opacity-30">
-            <ChevronRight className="h-3.5 w-3.5" />
+          <span className="whitespace-nowrap">Page {page + 1} of {totalPages}</span>
+          <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page >= totalPages - 1} className="disabled:opacity-30 p-1">
+            <ChevronRight className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
           </button>
         </div>
       )}

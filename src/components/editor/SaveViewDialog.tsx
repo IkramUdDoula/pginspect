@@ -34,7 +34,7 @@ interface SaveViewDialogProps {
 }
 
 export function SaveViewDialog({ open, onOpenChange, filters }: SaveViewDialogProps) {
-  const { activeConnection, activeSchema, sqlText, editorMode } = useConnection();
+  const { activeConnection, activeSchema, sqlText, editorMode, queryBlocks } = useConnection();
   const { createView } = useViews();
   
   const hasFilters = filters && filters.size > 0;
@@ -118,6 +118,7 @@ export function SaveViewDialog({ open, onOpenChange, filters }: SaveViewDialogPr
         description: description.trim() || undefined,
         queryText: finalQuery.trim(),
         queryType: editorMode as 'sql' | 'visual',
+        queryBlocks: editorMode === 'visual' ? JSON.stringify(queryBlocks) : undefined,
         autoRefreshInterval: autoRefreshInterval,
       };
 
