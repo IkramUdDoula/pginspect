@@ -134,9 +134,12 @@ app.post('/update', async (c) => {
 
     // Build UPDATE query
     const dataColumns = Object.keys(data);
-    const dataValues = Object.values(data);
-    const whereColumns = Object.keys(where);
-    const whereValues = Object.values(where);
+    const whereColumns = Object.keys(where).filter(k => where[k] !== undefined && where[k] !== null);
+    const whereValues = whereColumns.map(k => where[k]);
+
+    if (whereColumns.length === 0) {
+      return c.json({ success: false, error: 'WHERE clause is empty — update rejected to prevent full-table update' }, 400);
+    }
 
     const setClause = dataColumns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
     const whereClause = whereColumns.map((col, i) => `"${col}" = $${dataColumns.length + i + 1}`).join(' AND ');
@@ -148,7 +151,7 @@ app.post('/update', async (c) => {
       RETURNING *
     `;
 
-    const allValues = [...dataValues, ...whereValues];
+    const allValues = [...dataColumns.map(col => data[col] === undefined ? null : data[col]), ...whereValues];
     logger.info('Executing UPDATE query', { query, values: allValues });
     const result = await sql.unsafe(query, allValues as any[]) as any[];
 

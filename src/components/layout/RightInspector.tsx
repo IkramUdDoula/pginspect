@@ -91,11 +91,14 @@ export function RightInspector() {
         selectedTable.columns
           .filter(col => col.isPrimaryKey)
           .forEach(col => {
-            where[col.name] = editingRecord[col.name];
+            const val = editingRecord[col.name];
+            if (val !== undefined && val !== null) {
+              where[col.name] = val;
+            }
           });
 
         if (Object.keys(where).length === 0) {
-          toast.error("Cannot update: no primary key found");
+          toast.error("Cannot update: primary key value is missing from the row data");
           return;
         }
 
