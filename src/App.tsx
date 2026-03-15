@@ -30,18 +30,17 @@ if (!CLERK_PUBLISHABLE_KEY) {
 function AuthTokenProvider({ children }: { children: React.ReactNode }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      setAuthTokenProvider(async () => {
-        try {
-          return await getToken();
-        } catch (error) {
-          console.error("Failed to get auth token:", error);
-          return null;
-        }
-      });
+  // Set synchronously on every render so the provider is always current
+  // before any child component makes an API call
+  setAuthTokenProvider(async () => {
+    if (!isLoaded || !isSignedIn) return null;
+    try {
+      return await getToken();
+    } catch (error) {
+      console.error("Failed to get auth token:", error);
+      return null;
     }
-  }, [getToken, isLoaded, isSignedIn]);
+  });
 
   return <>{children}</>;
 }

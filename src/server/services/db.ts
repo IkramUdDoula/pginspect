@@ -176,12 +176,14 @@ export async function closeConnection(connectionId: string): Promise<void> {
     return;
   }
 
+  // Always remove from map first so it's not reused
+  connections.delete(connectionId);
+
   try {
-    await pool.sql.end();
-    connections.delete(connectionId);
+    await pool.sql.end({ timeout: 5 });
     logger.info('Database connection closed', { connectionId });
-  } catch (error) {
-    logger.error('Error closing database connection', error, { connectionId });
+  } catch {
+    // Connection was already terminated (e.g. idle timeout at DB level) — safe to ignore
   }
 }
 
@@ -255,7 +257,7 @@ export async function testConnection(info: ConnectionInfo): Promise<{ success: b
   }
 }
 
-function cleanupIdleConnections(): void {
+async function cleanupIdleConnections(): Promise<void> {
   const now = Date.now();
   const toRemove: string[] = [];
 
@@ -265,19 +267,14 @@ function cleanupIdleConnections(): void {
     }
   }
 
-  for (const id of toRemove) {
-    closeConnection(id).catch(err => {
-      logger.error('Error during idle connection cleanup', err, { connectionId: id });
-    });
-  }
-
   if (toRemove.length > 0) {
+    await Promise.all(toRemove.map(id => closeConnection(id)));
     logger.info('Cleaned up idle connections', { count: toRemove.length });
   }
 }
 
 // Cleanup idle connections every minute
-setInterval(cleanupIdleConnections, 60000);
+setInterval(() => cleanupIdleConnections().catch(() => {}), 60000);
 
 // Cleanup all connections on process exit
 process.on('SIGTERM', async () => {
