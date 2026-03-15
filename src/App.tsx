@@ -35,13 +35,7 @@ function AuthTokenProvider({ children }: { children: React.ReactNode }) {
   setAuthTokenProvider(async () => {
     if (!isLoaded || !isSignedIn) return null;
     try {
-      const token = await getToken();
-      // Clerk handshake tokens are short (~840 chars); real session JWTs are longer.
-      // If we get a suspiciously short token, force a refresh.
-      if (token && token.length < 900) {
-        return await getToken({ skipCache: true });
-      }
-      return token;
+      return await getToken();
     } catch (error) {
       console.error("Failed to get auth token:", error);
       return null;

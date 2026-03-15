@@ -71,7 +71,7 @@ function AppContent() {
               {isViewMode ? (
                 <ViewToolbar />
               ) : (
-                <div className="flex items-center justify-between px-2 sm:px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background gap-2 overflow-x-auto">
+                <div className="flex items-center justify-between px-2 sm:px-3 py-2 border-b border-border flex-shrink-0 relative z-10 bg-background gap-2 overflow-x-auto scrollbar-thin">
                   <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5 flex-shrink-0">
                     <button onClick={() => setEditorMode("visual")} className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${editorMode === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                       <Layers className="h-3.5 w-3.5 flex-shrink-0" /> <span className="hidden sm:inline">Visual Builder</span>
