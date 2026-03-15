@@ -35,6 +35,12 @@ export async function authMiddleware(c: Context, next: Next) {
     const authResult = await clerkClient.authenticateRequest(request, {
       secretKey: process.env.CLERK_SECRET_KEY!,
       publishableKey: process.env.CLERK_PUBLISHABLE_KEY!,
+      authorizedParties: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://pginspect-production-3e4b.up.railway.app',
+        ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+      ],
     });
     
     if (!authResult.isSignedIn) {
