@@ -38,8 +38,9 @@ export async function authMiddleware(c: Context, next: Next) {
       authorizedParties: [
         'http://localhost:5173',
         'http://localhost:3000',
+        'http://localhost:8080',
         'https://pginspect-production-3e4b.up.railway.app',
-        ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+        ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : []),
       ],
     });
     

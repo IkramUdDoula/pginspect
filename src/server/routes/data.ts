@@ -10,6 +10,15 @@ const app = new Hono();
 // Apply auth middleware to all routes
 app.use('*', authMiddleware);
 
+// Escape a value for safe inline SQL interpolation (no $N params, avoids null-counting bugs)
+function escapeValue(val: unknown): string {
+  if (val === null || val === undefined) return 'NULL';
+  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+  if (typeof val === 'number') return String(val);
+  // Escape single quotes by doubling them
+  return `'${String(val).replace(/'/g, "''")}'`;
+}
+
 // Insert data
 app.post('/insert', async (c) => {
   const startTime = Date.now();
@@ -44,19 +53,13 @@ app.post('/insert', async (c) => {
       }, 404);
     }
 
-    // Build INSERT query
     const columns = Object.keys(data);
-    const values = Object.values(data);
-    const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-    
-    const query = `
-      INSERT INTO "${schema}"."${table}" (${columns.map(col => `"${col}"`).join(', ')})
-      VALUES (${placeholders})
-      RETURNING *
-    `;
+    const colList = columns.map(col => `"${col}"`).join(', ');
+    const valList = columns.map(col => escapeValue(data[col])).join(', ');
+    const query = `INSERT INTO "${schema}"."${table}" (${colList}) VALUES (${valList}) RETURNING *`;
 
-    logger.info('Executing INSERT query', { query, values });
-    const result = await sql.unsafe(query, values as any[]) as any[];
+    logger.info('Executing INSERT query', { table });
+    const result = await sql.unsafe(query) as any[];
 
     await logAudit(c, {
       actionType: 'data_insert',
@@ -65,23 +68,18 @@ app.post('/insert', async (c) => {
       status: 'success',
       schemaName: schema,
       tableName: table,
-      queryText: query,
       queryType: 'INSERT',
       rowsAffected: result.length,
       executionTimeMs: Date.now() - startTime,
-      metadata: { columns: columns },
+      metadata: { columns },
     });
 
     return c.json({
       success: true,
-      data: {
-        rowsAffected: result.length,
-        row: result[0],
-      },
+      data: { rowsAffected: result.length, row: result[0] },
     });
   } catch (error) {
     logger.error('Insert data error', { error });
-    
     await logAudit(c, {
       actionType: 'data_insert_failed',
       actionCategory: 'data',
@@ -90,11 +88,7 @@ app.post('/insert', async (c) => {
       errorMessage: error instanceof Error ? error.message : 'Insert failed',
       executionTimeMs: Date.now() - startTime,
     });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Insert failed',
-    }, 500);
+    return c.json({ success: false, error: error instanceof Error ? error.message : 'Insert failed' }, 500);
   }
 });
 
@@ -125,35 +119,22 @@ app.post('/update', async (c) => {
         tableName: table,
         executionTimeMs: Date.now() - startTime,
       });
-      
-      return c.json({
-        success: false,
-        error: 'Connection not found',
-      }, 404);
+      return c.json({ success: false, error: 'Connection not found' }, 404);
     }
 
-    // Build UPDATE query
     const dataColumns = Object.keys(data);
     const whereColumns = Object.keys(where).filter(k => where[k] !== undefined && where[k] !== null);
-    const whereValues = whereColumns.map(k => where[k]);
 
     if (whereColumns.length === 0) {
-      return c.json({ success: false, error: 'WHERE clause is empty — update rejected to prevent full-table update' }, 400);
+      return c.json({ success: false, error: 'WHERE clause is empty - update rejected' }, 400);
     }
 
-    const setClause = dataColumns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
-    const whereClause = whereColumns.map((col, i) => `"${col}" = $${dataColumns.length + i + 1}`).join(' AND ');
-    
-    const query = `
-      UPDATE "${schema}"."${table}"
-      SET ${setClause}
-      WHERE ${whereClause}
-      RETURNING *
-    `;
+    const setClause = dataColumns.map(col => `"${col}" = ${escapeValue(data[col])}`).join(', ');
+    const whereClause = whereColumns.map(col => `"${col}" = ${escapeValue(where[col])}`).join(' AND ');
+    const query = `UPDATE "${schema}"."${table}" SET ${setClause} WHERE ${whereClause} RETURNING *`;
 
-    const allValues = [...dataColumns.map(col => data[col] === undefined ? null : data[col]), ...whereValues];
-    logger.info('Executing UPDATE query', { query, values: allValues });
-    const result = await sql.unsafe(query, allValues as any[]) as any[];
+    logger.info('Executing UPDATE query', { table });
+    const result = await sql.unsafe(query) as any[];
 
     await logAudit(c, {
       actionType: 'data_update',
@@ -162,26 +143,18 @@ app.post('/update', async (c) => {
       status: 'success',
       schemaName: schema,
       tableName: table,
-      queryText: query,
       queryType: 'UPDATE',
       rowsAffected: result.length,
       executionTimeMs: Date.now() - startTime,
-      metadata: { 
-        updatedColumns: dataColumns,
-        whereConditions: whereColumns,
-      },
+      metadata: { updatedColumns: dataColumns, whereConditions: whereColumns },
     });
 
     return c.json({
       success: true,
-      data: {
-        rowsAffected: result.length,
-        row: result[0],
-      },
+      data: { rowsAffected: result.length, row: result[0] },
     });
   } catch (error) {
     logger.error('Update data error', { error });
-    
     await logAudit(c, {
       actionType: 'data_update_failed',
       actionCategory: 'data',
@@ -190,11 +163,7 @@ app.post('/update', async (c) => {
       errorMessage: error instanceof Error ? error.message : 'Update failed',
       executionTimeMs: Date.now() - startTime,
     });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Update failed',
-    }, 500);
+    return c.json({ success: false, error: error instanceof Error ? error.message : 'Update failed' }, 500);
   }
 });
 
@@ -225,26 +194,15 @@ app.post('/delete', async (c) => {
         tableName: table,
         executionTimeMs: Date.now() - startTime,
       });
-      
-      return c.json({
-        success: false,
-        error: 'Connection not found',
-      }, 404);
+      return c.json({ success: false, error: 'Connection not found' }, 404);
     }
 
-    // Build DELETE query
     const whereColumns = Object.keys(where);
-    const whereValues = Object.values(where);
-    const whereClause = whereColumns.map((col, i) => `"${col}" = $${i + 1}`).join(' AND ');
-    
-    const query = `
-      DELETE FROM "${schema}"."${table}"
-      WHERE ${whereClause}
-      RETURNING *
-    `;
+    const whereClause = whereColumns.map(col => `"${col}" = ${escapeValue(where[col])}`).join(' AND ');
+    const query = `DELETE FROM "${schema}"."${table}" WHERE ${whereClause} RETURNING *`;
 
-    logger.info('Executing DELETE query', { query, values: whereValues });
-    const result = await sql.unsafe(query, whereValues as any[]) as any[];
+    logger.info('Executing DELETE query', { table });
+    const result = await sql.unsafe(query) as any[];
 
     await logAudit(c, {
       actionType: 'data_delete',
@@ -253,7 +211,6 @@ app.post('/delete', async (c) => {
       status: 'success',
       schemaName: schema,
       tableName: table,
-      queryText: query,
       queryType: 'DELETE',
       rowsAffected: result.length,
       executionTimeMs: Date.now() - startTime,
@@ -262,14 +219,10 @@ app.post('/delete', async (c) => {
 
     return c.json({
       success: true,
-      data: {
-        rowsAffected: result.length,
-        row: result[0],
-      },
+      data: { rowsAffected: result.length, row: result[0] },
     });
   } catch (error) {
     logger.error('Delete data error', { error });
-    
     await logAudit(c, {
       actionType: 'data_delete_failed',
       actionCategory: 'data',
@@ -278,11 +231,7 @@ app.post('/delete', async (c) => {
       errorMessage: error instanceof Error ? error.message : 'Delete failed',
       executionTimeMs: Date.now() - startTime,
     });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Delete failed',
-    }, 500);
+    return c.json({ success: false, error: error instanceof Error ? error.message : 'Delete failed' }, 500);
   }
 });
 
