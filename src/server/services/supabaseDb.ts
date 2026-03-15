@@ -115,12 +115,14 @@ export async function closeSupabaseConnection(connectionId: string): Promise<voi
     return;
   }
 
+  // Always remove from map first so it's not reused
+  connections.delete(connectionId);
+
   try {
     await connection.pool.end();
-    connections.delete(connectionId);
     logger.info('Supabase database connection closed', { connectionId });
-  } catch (error) {
-    logger.error('Error closing Supabase database connection', error, { connectionId });
+  } catch {
+    // Connection was already terminated — safe to ignore
   }
 }
 
@@ -185,7 +187,7 @@ export async function testSupabaseConnection(info: ConnectionInfo): Promise<{ su
   }
 }
 
-function cleanupIdleConnections(): void {
+async function cleanupIdleConnections(): Promise<void> {
   const now = Date.now();
   const toRemove: string[] = [];
 
@@ -195,19 +197,14 @@ function cleanupIdleConnections(): void {
     }
   }
 
-  for (const id of toRemove) {
-    closeSupabaseConnection(id).catch(err => {
-      logger.error('Error during idle connection cleanup', err, { connectionId: id });
-    });
-  }
-
   if (toRemove.length > 0) {
+    await Promise.all(toRemove.map(id => closeSupabaseConnection(id)));
     logger.info('Cleaned up idle Supabase connections', { count: toRemove.length });
   }
 }
 
 // Cleanup idle connections every minute
-setInterval(cleanupIdleConnections, 60000);
+setInterval(() => cleanupIdleConnections().catch(() => {}), 60000);
 
 // Cleanup all connections on process exit
 process.on('SIGTERM', async () => {
