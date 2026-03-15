@@ -99,8 +99,6 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   // Load saved connections on mount (with retry for auth and localStorage cache)
   React.useEffect(() => {
     let mounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
     const CACHE_KEY = 'dbexplorer_connections_cache';
 
     // Try to load from localStorage cache immediately
@@ -113,7 +111,6 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         if (age < 5 * 60 * 1000 && cachedConnections.length > 0) {
           console.log('[ConnectionContext] Loading from cache:', cachedConnections);
           setConnections(cachedConnections);
-          // Keep dashboard visible
           setIsInitialLoad(false);
         }
       }
@@ -121,8 +118,13 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       console.error('[ConnectionContext] Failed to load cache:', error);
     }
 
+    // Don't attempt API call until Clerk is fully loaded and user is signed in
+    if (!isLoaded || !isSignedIn) {
+      return;
+    }
+
     const loadSavedConnections = async () => {
-      console.log('[ConnectionContext] Loading saved connections, attempt:', retryCount + 1);
+      console.log('[ConnectionContext] Loading saved connections');
       try {
         const response = await apiClient.getSavedConnections();
         console.log('[ConnectionContext] API response:', response);
@@ -142,29 +144,18 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
               console.error('[ConnectionContext] Failed to cache connections:', error);
             }
             
-            // Keep dashboard visible - don't auto-navigate
             setIsInitialLoad(false);
           }
-        } else if (response.error?.includes('Unauthorized') && retryCount < maxRetries) {
-          console.log('[ConnectionContext] Auth not ready, retrying...');
-          retryCount++;
-          setTimeout(loadSavedConnections, 500 * retryCount);
         } else {
           console.error('[ConnectionContext] Failed to load connections:', response.error);
           setIsInitialLoad(false);
         }
       } catch (error) {
         console.error('[ConnectionContext] Exception loading connections:', error);
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(loadSavedConnections, 500 * retryCount);
-        } else {
-          setIsInitialLoad(false);
-        }
+        setIsInitialLoad(false);
       }
     };
 
-    // Small delay to ensure auth is ready
     console.log('[ConnectionContext] Scheduling connection load');
     const timer = setTimeout(loadSavedConnections, 100);
 
@@ -172,7 +163,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
       mounted = false;
       clearTimeout(timer);
     };
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const addConnection = useCallback(async (conn: ConnectionInfo) => {
     setIsLoading(true);
